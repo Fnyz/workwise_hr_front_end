@@ -89,7 +89,7 @@ const Items = ({empList, changeStatus, positions, departments, load}) => {
           <tr>
           <td className="p-4 whitespace-nowrap text-sm font-normal text-gray-900" colSpan="4">
            <div className='ml-5'>
-             <span>No data found!</span>
+             <span className="font-semibold">No data found!</span>
           </div>
           </td>
        </tr>
@@ -135,6 +135,7 @@ function Employees() {
    });
    const [pagination, setPagination] = useState([]);
    const [search, setSearch] = useState("");
+   const [loadButton, setLoadButton] = useState(false);
 
 
 
@@ -308,7 +309,7 @@ function Employees() {
 
 
    const handleSubmitEmployee = () => {
-  
+      setLoadButton(true)
       if(payload.employee_image_url){
          payload.employee_image = payload.employee_image_url;
       }
@@ -339,6 +340,7 @@ function Employees() {
         
          axiosClient.put(`/employee/${_id}`, queryString, config)
          .then(()=>{
+            setLoadButton(false)
             refChoose.current.value = "";
             alert("Employee updated successfully");
             getAllEmployees(userData);
@@ -360,6 +362,7 @@ function Employees() {
 
          })
          .catch((err)=>{
+            setLoadButton(false)
             const {response} = err;
             if(response &&  response.status  === 422){
             console.log(response.data)
@@ -380,6 +383,7 @@ function Employees() {
       department_id: parseInt(payload.department_id),
       position_id: parseInt(payload.position_id)
       }).then(()=>{
+         setLoadButton(false)
          document.getElementById('my_modal_5').close()
          swal({
             title: "Good job!",
@@ -390,6 +394,7 @@ function Employees() {
    
          getAllEmployees(userData);
       }).catch((err)=>{
+         setLoadButton(false)
          const {response} = err;
          if(response &&  response.status  === 422){
             setError(response.data.errors)
@@ -645,7 +650,17 @@ function Employees() {
             <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['position_id'] && "The position field is required."}</p>
            
             <div className="modal-action">
-                <button type='button' onClick={handleSubmitEmployee} className="btn max-md:w-full bg-[#0984e3] hover:bg-[#0984e3] text-white w-[30%]">{_id ? 'Submit':'Create'}</button>
+                <button type='button' onClick={handleSubmitEmployee} className="btn max-md:w-full bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]">
+                 {loadButton ? (
+                     <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                        Please wait...
+                     </>
+                  ): 
+                  _id ? 'Submit':'Create'
+                  }
+     
+                  </button>
             </div>
             </form>
         </div>

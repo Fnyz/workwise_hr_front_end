@@ -15,7 +15,8 @@ function Positions() {
    const [search, setSearch] = useState("");
    const [checkboxState, setCheckboxState] = useState([]);
    const [checkHead, setCheckboxHead] = useState(false);
-   const [error, setError] = useState(null)
+   const [error, setError] = useState(null);
+   const [loadButton, setLoadButton] = useState(false);
 
 
     const handleCheckboxChange = (e) => {
@@ -49,11 +50,13 @@ function Positions() {
    const submitPosition = (ev) => {
       ev.preventDefault();
       setCheckboxHead(false)
+      setLoadButton(true)
      
 
       if(id){
          axiosClient.put(`/position/${id}?position=${_position}`)
          .then(()=>{
+            setLoadButton(false)
             document.getElementById('my_modal_5').close()
             getListPosition();
             setPositionId("");
@@ -66,6 +69,7 @@ function Positions() {
              _setPosition("");
          })
          .catch((err)=>{
+            setLoadButton(false)
             const {response} = err;
             if(response &&  response.status  === 422){
              setError(response.data.errors)
@@ -82,7 +86,8 @@ function Positions() {
          position: _position,
       })
       .then((res)=>{
-      
+
+         setLoadButton(false)
          _setPosition("");
          document.getElementById('my_modal_5').close()
          swal({
@@ -95,6 +100,7 @@ function Positions() {
          getListPosition();
       })
       .catch((err)=>{
+         setLoadButton(false)
          const {response} = err;
          if(response &&  response.status  === 422){
             setError(response.data.errors)
@@ -367,7 +373,17 @@ function Positions() {
             </label>
             <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['position']}</p>
             <div className="modal-action">
-                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[30%]"> {id ? 'Submit': 'Create'}</button>
+                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]">
+                  {loadButton ? (
+                     <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                        Please wait...
+                     </>
+                  ): 
+                  id ? 'Submit': 'Create'
+                  }
+         
+                   </button>
                 <button type='button' className="btn shadow" onClick={() => {
                   setPositionId("")
                   _setPosition("")

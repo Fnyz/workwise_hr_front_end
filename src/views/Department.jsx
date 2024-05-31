@@ -18,6 +18,7 @@ function Department() {
    const [checkHead, setCheckboxHead] = useState(false);
    const [error, setError] = useState(null)
    const [load, setLoad] = useState(false);
+   const [loadButton, setLoadButton] = useState(false);
 
    const handleCheckboxChange = (e) => {
       setCheckboxHead(false)
@@ -147,6 +148,7 @@ function Department() {
 
    const addDepartment = (e) => {
       e.preventDefault();
+      setLoadButton(true)
 
       const data = {
          department:department.trim(),
@@ -156,11 +158,16 @@ function Department() {
       if(_id){
         
          const {total_employees} = departments.find(d => parseInt(d.id) === parseInt(_id));
-         if(!employee_id) {
+         
+       
+         if(!employee_id && total_employees === 1) {
+            setLoadButton(false)
             document.getElementById('my_modal_5').close()
+            setDepartment("");
+            setShow(false);
             swal({
                title: "Oooops!",
-               text: "Please choose a valid employee for this department",
+               text: "There is an employee for this department, Please choose a valid employee.",
                icon: "error",
                dangerMode: true,
              });
@@ -169,6 +176,7 @@ function Department() {
     
          axiosClient.put(`/department/${_id}?department=${department.trim()}${parseInt(total_employees) > 0 ? `&employee_id=${employee_id}`: `&action=true`}`)
          .then(()=>{
+            setLoadButton(false)
             swal({
                title: "Good job!",
                text: "Company department is updated successfully!",
@@ -183,6 +191,7 @@ function Department() {
             setDepartmentId("");
          })
          .catch((err)=>{
+            setLoadButton(false)
             const {response} = err;
             if(response &&  response.status  === 422){
               console.log(response.data)
@@ -193,6 +202,7 @@ function Department() {
 
       axiosClient.post('/department', data)
       .then(() => {
+         setLoadButton(false)
          document.getElementById('my_modal_5').close()
          swal({
             title: "Good job!",
@@ -204,6 +214,7 @@ function Department() {
          setDepartment("")
          })
       .catch((err) => {
+         setLoadButton(false)
          const {response} = err;
          if(response &&  response.status  === 422){
             setError(response.data.errors)
@@ -499,7 +510,17 @@ function Department() {
                   )}
             
             <div className="modal-action">
-                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[30%]"> { _id ? 'Submit' : 'Create'}</button>
+                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]"> 
+                {loadButton ? (
+                     <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                        Please wait...
+                     </>
+                  ): 
+                  _id ? 'Submit' : 'Create'
+                  }
+     
+                </button>
                 <button type='button' className="btn shadow" onClick={() => {
                   setDepartment("");
                   setDepartmentId("");

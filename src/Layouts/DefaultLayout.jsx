@@ -295,7 +295,23 @@ function DefaultLayout() {
         position_id:payload.position_id,
         action: 'Employee_update_data'
       }
-  
+
+
+
+      if(role === "HR" || role === "ADMIN"){
+        if(!data.position_id || !data.department_id){
+          document.getElementById('my_settings_3').close();
+          swal({
+            title: "Oooops!",
+            text: "You can't update your account because your position or department is empty, please try again!",
+            icon: "warning",
+            dangerMode: true,
+          })
+          return;
+        }
+      }
+
+    
      const config = {
       headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -415,13 +431,13 @@ function DefaultLayout() {
     getDataList('department')
   ])
     .then((data) => {
-    
+     
       const emp_id = data[1].data.find(emp => emp.employee_email === data[0].email)?.id;
       const emp_role = data[1].data.find(emp => emp.employee_email === data[0].email)?.employee_role;
-      const department_id = data[1].data.find(emp => emp.employee_email === data[0].email)?.department_id;
+      const department_id = data[1]?.data.find(emp => emp.employee_email === data[0].email)?.department_id;
       const position_id = data[1].data.find(emp => emp.employee_email === data[0].email)?.position_id;
        
-
+    
 
       setUser(data[0])
       
@@ -465,16 +481,6 @@ function DefaultLayout() {
         setCanFileLeave(true);
       }
 
-      // var pusher = new Pusher('58cfedbc50426467817a', {
-      //   cluster: 'ap1'
-      // });
-  
-   
-      // var channel = pusher.subscribe('workwise_channel');
-      //   channel.bind('workwise_event', function() {
-      //     fetchNotification(emp_id, emp_role)
-      //      return;
-      //   }); 
 
       fetchNotification(emp_id, emp_role)
       setLoading(false);
@@ -571,27 +577,7 @@ function DefaultLayout() {
         .map((link ,i) => (
              <li key={i} >
              <Link to={`${link.path}`} onClick={(e)=> {
-            
-            
-                if(!user.email_verified_at && link.path === '/leave'){
-                  e.preventDefault();
-                  setChooseSettings("Account Verification")
-                  setPayload({...payload, employee_email:employeeData.employee_email})
-                  swal({
-                    title: "Oooops!",
-                    text: "You are not allowed to add leave, because you email account is not verified yet. Click OK now to verified your email account.",
-                    icon: "warning",
-                    buttons: true,
-                    dangerMode: true,
-                  })
-                  .then((willDelete) => {
-                    if (willDelete) {
-                      document.getElementById('my_settings_3').showModal()
-                    } 
-                  });
-                 
-                  return;
-                }
+          
                 
                 if(!canFileLeave && link.path === '/leave'){
                   e.preventDefault();
@@ -599,7 +585,6 @@ function DefaultLayout() {
                     title: "Oooops!",
                     text: `You are not allowed to add leave, because you don't have a department or a position as an ${role}.`,
                     icon: "warning",
-                    buttons: true,
                     dangerMode: true,
                   })
                   return ;
@@ -698,7 +683,7 @@ function DefaultLayout() {
          <div className='w-full '>
               <div className="-mx-6 px-6 py-4 text-center ">
                   <a href="#" title="home">
-                  <h4 className="block font-sans text-2xl font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased">
+                  <h4 className="block font-sans text-2xl font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased ">
                   Workwise<span className=' text-[#3498db] font-bold'>HR.</span>
                 
                   </h4>
@@ -799,8 +784,17 @@ function DefaultLayout() {
 
            
 
-
-            <div className="navbar-end">
+            
+            <div className="navbar-end ">
+            {!_id && (
+            <div className="indicator ">
+                        <button type='button' onClick={logOut} aria-label="notification" className="w-10 h-10 rounded-xl border  focus:bg-gray-100 active:bg-gray-200 indicator max-md:block hidden">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"  stroke="currentColor" className="h-5 w-5 m-auto " >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+                          </svg>
+                      </button>
+              </div>
+            )}
             {_id && (
                   <div className="flex space-x-2 items-center"> 
                    
@@ -847,7 +841,7 @@ function DefaultLayout() {
                                }}>Change email address</a></li>
                               )}
 
-                            <li className=' max-md:block hidden'><a onClick={logOut}>Log-out</a></li>
+                            <li className='max-md:blockhidden'><a onClick={logOut}>Log-out</a></li>
                           </ul>
                         </div>
                       </div>

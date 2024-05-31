@@ -6,9 +6,11 @@ import { Link } from "react-router-dom";
 
 
 
+
 function Dashboard() {
 
     const [empRole, setRole] = useState("");
+    const [loadingButton, setLoadingButton] = useState(false);
     const [userData, setUserData] = useState({
         employee_id: "",
         employee_image: "",
@@ -20,6 +22,7 @@ function Dashboard() {
      const [totalEmployee, setTotalEmployee] = useState([])
      const [pendingLeave, setPendingLeave] = useState([]);
      const [totalNotifications, setTotalNotifications] = useState([])
+     const [loadSubmit, setLoadSubmit] = useState(false);
      const [load, setLoading] = useState(false);
   
     useEffect(()=>{
@@ -87,11 +90,15 @@ function Dashboard() {
       },[])
 
       const handleSetAccount = (e) => {
+        setLoadSubmit(true)
         e.preventDefault();
 
        const check = totalEmployee.filter(e => e.employee_role === "HR" || e.employee_role === "ADMIN")
 
-       if(!check){
+
+  
+       if(!check.length){
+    
             axiosClient.post("/employee", {
                     employee_id: userData.employee_id,
                     employee_name: userData.employee_name,
@@ -103,7 +110,7 @@ function Dashboard() {
                     type:'setAccount',
                 })
             .then(({data}) => {
-
+                setLoadSubmit(false)
                 document.getElementById('my_modal_5').close();
                 swal({
                     title: "Good job!",
@@ -129,12 +136,12 @@ function Dashboard() {
             employee_image: userData.employee_image || "",
         }
  
-
+       
        
         if(res){
 
-            
             if(res?.employee_status?.trim() === "Inactive"){
+                setLoadSubmit(false)
                 document.getElementById('my_modal_5').close();
                 swal({
                     title: "Oooops!",
@@ -144,14 +151,14 @@ function Dashboard() {
                 })
                 return;
             }
-          
-
+         
             if(!res.employee_email){
             
                 axiosClient.put(`/employee/${res.id}?${new URLSearchParams(url).toString()}`,{
                         action:'Employee_set_account',
                 })
                .then(() => { 
+                setLoadSubmit(false)
                 document.getElementById('my_modal_5').close();
 
                 swal({
@@ -169,7 +176,7 @@ function Dashboard() {
                return;
             }
 
-
+            setLoadSubmit(false)
             document.getElementById('my_modal_5').close();
             swal({
                 title: "Oooops!",
@@ -181,6 +188,7 @@ function Dashboard() {
             return;
         
         }else{
+            setLoadSubmit(false)
             document.getElementById('my_modal_5').close();
             if(!userData.employee_id){
                 swal({
@@ -321,18 +329,24 @@ function Dashboard() {
                 <>
                 <div className="ml-auto mb-6 lg:w-[75%] xl:w-[80%] 2xl:w-[85%]">
                     <div className="bg-white shadow rounded-lg p-4 sm:p-6 xl:p-8 m-5">
-              
+           
                         <div className="hero min-h-screen bg-base-200">
-                            <div className="hero-content text-center ">
+     
+        
+                            <div className="hero-content text-center max-md:text-start">
                                 <div>
-                                    <h1 className="text-5xl font-bold">Hi there, Welcome to Workwise<span className="text-[#00b894]">HR.</span></h1>
-                                        <p className="py-6 opacity-70 font-medium">Ooopps, looks like you don't have a position yet. <br></br> Please use your <span className="font-bold text-red-500">EMPLOYEE ID</span> to become an employee.</p> 
-                                        <button className="btn bg-[#00b894] opacity-70 text-white hover:bg-[#00b894] hover:opacity-100 transition-all ease-in" onClick={()=> {
+                               
 
-                                        document.getElementById('my_modal_5').showModal();
+                                    <h1 className="text-5xl font-bold max-md:text-2xl">Hi there, Welcome to Workwise<span className="text-[#00b894]">HR.</span></h1>
+                                        <p className="py-6 opacity-70 font-medium max-md:text-sm">Ooopps, looks like you don't have a position yet. <br></br> Please use your <span className="font-bold text-red-500">EMPLOYEE ID</span> to become an employee.</p> 
+
+                                        <button className="btn bg-[#00b894] opacity-70 max-md:w-full text-white hover:bg-[#00b894] hover:opacity-100 transition-all ease-in" onClick={()=> {
+                                        setLoadingButton(true)
                                         axiosClient.get("/user")
                                         .then((user)=>{
-                                    
+                                            setLoadSubmit(false)
+                                            document.getElementById('my_modal_5').showModal();
+                                            setLoadingButton(false)
                                             setUserData({
                                                 ...userData,
                                                 employee_email:user.data.email,
@@ -342,18 +356,25 @@ function Dashboard() {
                                           
                                         })
                                       
-                                    }}>Click here</button>
+                                    }}>
+                                    {loadingButton ? (
+                                        <>
+                                          <span className="loading loading-spinner loading-sm"></span>
+                                            Please wait...
+                                        </>
+                                    ): "Click here"}
+                                        </button>
                                 </div>
                             </div>
                         </div>   
                     </div>
                 
                 </div> 
-                <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle ">
-            <div className="modal-box w-[10px]">
+                <dialog id="my_modal_5" className="modal  sm:modal-middle ">
+            <div className="modal-box ">
                 <div className="flex justify-between">
                 <div>
-                <h3 className="font-bold text-lg">New Employee</h3>
+                <h3 className="font-bold text-lg ">New Employee</h3>
                 <span className="label-text opacity-70 ">Input all the fields below</span>
                 </div>
                 <button type='button' className="btn shadow"  onClick={()=>  document.getElementById('my_modal_5').close()} >
@@ -373,7 +394,15 @@ function Dashboard() {
                 </label>
              
                 <div className="modal-action">
-                    <button type='submit'  className="btn btn-success text-white w-[100%]">Submit</button>
+                    <button type='submit'  className="btn btn-success text-white w-[100%]">
+                    {loadSubmit ? (
+                                        <>
+                                          <span className="loading loading-spinner loading-sm"></span>
+                                            Please wait...
+                                        </>
+                    ): "Submit"}
+                    
+                    </button>
                 </div>
                 </form>
             </div>
@@ -387,14 +416,16 @@ function Dashboard() {
                 <div className="ml-auto mb-6 lg:w-[75%] xl:w-[80%] 2xl:w-[85%]">
                     <div className="bg-white shadow rounded-lg p-4 sm:p-6 xl:p-8 m-5">
                         <div className="hero min-h-screen bg-base-200">
-                            <div className="hero-content text-center">
+                            <div className="hero-content text-center max-md:text-start">
                                 <div>
-                                    <h1 className="text-5xl font-bold">Hi there, Welcome to Workwise<span className="text-[#00b894]">HR.</span></h1>
-                                        <p className="py-6 opacity-70 font-medium">Look like no ADMIN or HR role in this application, <br></br> so you can set your account to two role now to manage this application.</p> 
-                                    <button className="btn bg-[#00b894] opacity-70 text-white hover:bg-[#00b894] hover:opacity-100 transition-all ease-in" onClick={()=> {
-                                        document.getElementById('my_modal_5').showModal();
+                                    <h1 className="text-5xl font-bold max-md:text-2xl">Hi there, Welcome to Workwise<span className="text-[#00b894] max-md:text-2xl">HR.</span></h1>
+                                        <p className="py-6 opacity-70 font-medium max-md:text-sm">Look like no ADMIN or HR role in this application, <br className=" max-md:hidden block"></br> so you can set your account to two role now to manage this application.</p> 
+                                    <button className="btn bg-[#00b894] opacity-70 max-md:w-full text-white hover:bg-[#00b894] hover:opacity-100 transition-all ease-in" onClick={()=> {
+                                       setLoadingButton(true)
                                         axiosClient.get("/user")
                                         .then((user)=>{
+                                            setLoadingButton(false)
+                                            document.getElementById('my_modal_5').showModal();
                                             setUserData({
                                                 ...userData,
                                                 employee_name:user.data.name,
@@ -406,13 +437,20 @@ function Dashboard() {
                                         })
                                      
                                       
-                                    }}>Set Account</button>
+                                    }}> 
+                                    {loadingButton ? (
+                                        <>
+                                          <span className="loading loading-spinner loading-sm"></span>
+                                            Please wait...
+                                        </>
+                                    ): "Set Account"}
+                                    </button>
                                 </div>
                             </div>
                         </div>   
                     </div>
-                    <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle ">
-            <div className="modal-box w-[10px]">
+                    <dialog id="my_modal_5" className="modal  sm:modal-middle ">
+            <div className="modal-box ">
                 <div className="flex justify-between">
                 <div>
                 <h3 className="font-bold text-lg">New Employee</h3>
@@ -427,7 +465,7 @@ function Dashboard() {
                 </div>
                 <label className="input input-bordered mt-2 flex items-center gap-2">
                   Employee ID
-                   <input value={userData.employee_id || ""}   type="text" className="grow" placeholder="i.g Onsoure000***" onChange={(e)=> setUserData({...userData, employee_id: e.target.value })} />
+                   <input value={userData.employee_id || ""}   type="text" className="grow" placeholder="i.g *******" onChange={(e)=> setUserData({...userData, employee_id: e.target.value })} />
                 </label>
                 <label className="input input-bordered mt-2 flex items-center gap-2">
                   Full name
@@ -455,7 +493,15 @@ function Dashboard() {
                 </label>
                
                 <div className="modal-action">
-                    <button type='submit'  className="btn btn-success text-white w-[100%]">Set account as HR</button>
+                    <button type='submit'  className="btn btn-success text-white w-[100%]">
+                    {loadSubmit ? (
+                                        <>
+                                          <span className="loading loading-spinner loading-sm"></span>
+                                            Please wait...
+                                        </>
+                    ): " Set account as HR"}
+                       
+                    </button>
                 </div>
                 </form>
             </div>
