@@ -15,8 +15,11 @@ import ShowUser from "./views/ShowUser";
 import UserDetails from "./views/UserDetails";
 import Leave from "./views/Leave";
 import Mainhero from "./views/Mainhero";
-import PartNumberToArray from "./views/PartNumberToArray";
 import Notifications from "./views/Notifications";
+import Attendance from "./views/Attendance";
+import Hubstaff_members from "./views/Hubstaff_members";
+import Compensation from "./views/Payroll_and_Payslip";
+
 
 
 
@@ -32,6 +35,7 @@ const router = createBrowserRouter([
           { path: "/dashboard", element: <Dashboard /> },
           { path: "/positions", element: <Positions /> },
           { path: "/department", element: <Department />},
+          { path: "/attendance", element: <Attendance />},
           { path: "/employees", element: <Employees />},
           { path: "/employees/add-excel", element: <AddExcel />},
           { path: "/history", element: <History />},
@@ -40,6 +44,8 @@ const router = createBrowserRouter([
           { path: "/employees/:id/update", element: <ShowUser />},
           { path: "/employees/:id", element: <UserDetails />},
           { path: "/notification", element: <Notifications />},
+          { path: "/members", element: <Hubstaff_members />},
+          { path: "/compensation", element: <Compensation />}
  
       
         ]

@@ -17,7 +17,7 @@ export const ComponentDataList = ({ind, chilIn, data, moment, showReusableData, 
     if(!data.length){
      return (
       <tr>
-          <td className="p-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+          <td className="p-4 whitespace-nowrap text-sm font-bold text-gray-900">
           No data found!
           </td>
       </tr>

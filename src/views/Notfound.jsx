@@ -1,6 +1,9 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 function Notfound() {
+
+
+
   return (
  
     <div className="w-full h-screen flex flex-col items-center justify-center">

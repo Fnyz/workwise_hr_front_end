@@ -1,10 +1,11 @@
-import React, {  useRef, useState } from 'react'
+import React, {  useRef, useState, useEffect  } from 'react'
 import { useAuth } from '../context';
 import axiosClient from '../axiosClient';
 import 'boxicons'
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+
 
 function Login() {
 
@@ -15,6 +16,9 @@ function Login() {
   const [error, setError] = useState(null);
   const [error_for_email, setForEmail] = useState(null);
   const [loadnow, setLoadnow] = useState(false);
+  const [urlHubstaf, setURlHubstaff] = useState(false);
+  const [codeYes, setCodeYes] = useState("");
+
   
   const loginWithGoogle =  useGoogleLogin({
         onSuccess: tokenResponse => {
@@ -53,6 +57,11 @@ function Login() {
        }
     });
   }
+
+
+
+
+
 
   
   const login = (ev) => {
@@ -120,6 +129,7 @@ function Login() {
   }
 
 
+ 
   
 
   return (
@@ -170,8 +180,67 @@ function Login() {
             >
                 Login
             </button> 
+
+
            
             </form>
+
+            {/* <div>
+                    <button onClick={() => {
+                        const redirectUri = 'http://localhost:3000/login';
+                        const clientId = '-qFygvdT-QkTvGHFEcsQ0F60tn-CpeMSJ_VBACRxCPw';
+                        const clientSecret = '6NqAScfbL-JENwUOYYYeRkOczoVKzXSWupOn_YZLDTbYyQqmUopuFsgLhGuMw0z-mFu1V6OPWYPDkQ-0qC0hdg';
+                        
+                        const userinfoEndpoint = 'https://account.hubstaff.com/user_info';
+     
+                        const tokenEndpoint = 'https://account.hubstaff.com/access_tokens';
+                        
+                 
+                        const data = {
+                          grant_type: 'authorization_code',
+                          code: codeYes,
+                          redirect_uri: redirectUri
+                        };
+                        
+                        const headers = {
+                            'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                          };
+                      
+                        axios.post(tokenEndpoint, new URLSearchParams(data).toString(), { headers })
+                          .then(response => {
+                            const { token_type, access_token, expires_in, refresh_token, id_token } = response.data;
+    
+                            console.log('Token type:', token_type);
+                            console.log('Access token:', access_token);
+                            console.log('Expires in:', expires_in);
+                            console.log('Refresh token:', refresh_token);
+                            console.log('ID token:', id_token);
+
+                            axios.get(userinfoEndpoint, {
+                                headers: {
+                                  'Authorization': `Bearer ${access_token}`
+                                }
+                              })
+                              .then(userinfoResponse => {
+                                // Handle userinfo response
+                                console.log('User details:', userinfoResponse.data);
+                              })
+                              .catch(userinfoError => {
+                                // Handle error while fetching userinfo
+                                console.error('Error fetching userinfo:', userinfoError.response.data);
+                              });
+
+                          })
+                          .catch(error => {
+                            // Handle error
+                            console.error('Error exchanging authorization code for access token:', error.response.data);
+                          });
+                        
+
+                    }}>Authorize with Hubstaff</button>
+                    </div> */}
+
 
             <div className='w-full  justify-center '>
             <button type='submit' className="btn  bg-[#00b894] hover:bg-[#00b894] my-2 w-full text-white" onClick={() => loginWithGoogle()}><box-icon color="white" size="sm"  type='logo' name='google'></box-icon> Login with Google</button>

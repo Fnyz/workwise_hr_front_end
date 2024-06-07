@@ -8,7 +8,7 @@ import { googleLogout } from '@react-oauth/google';
 import { Link } from 'react-router-dom';
 import moment from 'moment';
 import "./../App.css"
-import Pusher from 'pusher-js';
+
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -153,19 +153,19 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
     case "Change Email Address":
       html_render = (
         <form  method="dialog">
-       <span className='text-sm opacity-65 '>Input your new email account here</span>
-       <label className="input input-bordered mt-4 flex items-center gap-2 ">
-          <span className=' max-md:text-sm'>Current email: </span>
-           <input value={payload.employee_email || ""} name="employee_email"  disabled  type="text" className={`grow opacity-50`} placeholder="i.g marcus" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
-        </label>
-        <label className="input input-bordered mt-4 flex items-center gap-2 ">
-           <span className=' max-md:text-sm'>New email:</span>
-           <input value={payload.new_email || ""} name="new_email"   type="text" className={`grow opacity-50`} placeholder="i.g marcus" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
-        </label>
-        <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['email']}</p>
-        <div className="modal-action">
+          <span className='text-sm opacity-65 '>Input your new email account here</span>
+          <label className="input input-bordered mt-4 flex items-center gap-2 ">
+              <span className=' max-md:text-sm'>Current email: </span>
+              <input value={payload.employee_email || ""} name="employee_email"  disabled  type="text" className={`grow opacity-50`} placeholder="i.g marcus" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
+            </label>
+          <label className="input input-bordered mt-4 flex items-center gap-2 ">
+            <span className=' max-md:text-sm'>New email:</span>
+            <input value={payload.new_email || ""} name="new_email"   type="text" className={`grow opacity-50`} placeholder="i.g marcus" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
+          </label>
+            <p className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['email']}</p>
+          <div className="modal-action">
             <button type='button' className="btn btn-success text-white w-[50%] max-md:w-full" onClick={handleSubmit}>CHANGE EMAIL</button>
-        </div>
+          </div>
         </form>
       )
     break;
@@ -230,17 +230,18 @@ function DefaultLayout() {
 
 
 
+  
+
   const logOut = () => {
 
     axiosClient.post("/logout")
     .then(()=>{
+        localStorage.removeItem("HUBSTAFF_ACCESS_TOKEN");
         googleLogout();
         setUser({});
         setToken(null);
     })
   }
-
-
 
 
   const handleSubmit = () => {
@@ -279,7 +280,6 @@ function DefaultLayout() {
         payload.employee_image = payload.employee_image ? payload.employee_image : "";
       }else{
         payload.employee_image = payload.employee_image_url;
-  
       }
      delete payload.employee_image_url;
      const data = {
@@ -570,14 +570,30 @@ function DefaultLayout() {
         || link.path === '/positions' 
         || link.path === '/department'
         || link.path === '/employees'
+        || link.path === '/attendance'
         || link.path === '/notification'
         || link.path === '/leave'
         || link.path === '/history'
+        || link.path === '/members'
+        || link.path === '/compensation'
       ) 
         .map((link ,i) => (
              <li key={i} >
              <Link to={`${link.path}`} onClick={(e)=> {
-          
+           
+                if(!localStorage.getItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN") && link.path === '/attendance' ){
+                  e.preventDefault();
+                    document.getElementById('my_modal_hubstaff').showModal()
+                  return ;
+                }
+
+                if(!localStorage.getItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN") && link.path === '/members' ){
+                  e.preventDefault();
+                    document.getElementById('my_modal_hubstaff').showModal()
+                  return ;
+                }
+                   
+                          
                 
                 if(!canFileLeave && link.path === '/leave'){
                   e.preventDefault();
@@ -624,6 +640,8 @@ function DefaultLayout() {
                  
                   return ;
               }
+
+
                       
               if(!canFileLeave && link.path === '/leave'){
                 e.preventDefault();
@@ -952,6 +970,37 @@ function DefaultLayout() {
               loadnow={loadnow}
               role={role}
                 />
+            </div>
+          </dialog>
+
+          <dialog id="my_modal_hubstaff" className="modal">
+            <div className="modal-box">
+              <form method="dialog">
+                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+              </form>
+              <h3 className="font-bold text-lg">Hello from WorkwiseHR.</h3>
+              <p className="py-2 opacity-70 text-sm">To access this please login your admin hubstaff account.</p>
+                <button className="btn mt-2 text-black bg-white hover:opacity-100" onClick={()=> {
+
+                      const clientId = import.meta.env.VITE_API_HUBSTAFF_CLIENT_ID;
+                      const redirectUri = 'http://localhost:3000/attendance';
+                      const responseType = 'code';
+                      const scopes = ['openid', 'profile', 'email', 'tasks:read', 'tasks:write', 'hubstaff:read', 'hubstaff:write'];
+                      const scopeString = scopes.join('%20');
+                      const nonce = generateNonce(); 
+                      const authUrl = `https://account.hubstaff.com/authorizations/new?client_id=${clientId}&response_type=${responseType}&nonce=${encodeURIComponent(nonce)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopeString}`;
+                     
+                      function generateNonce() {
+                        const randomString = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                        return randomString;
+                      }
+
+                      window.location.href = authUrl;
+
+                }}>
+                 <img src="hubstafflogo-removebg-preview.png" className="w-10 opacity-70" />
+                  <span className="opacity-70">LOGIN TO HUBSTAFF ACCOUNT</span>
+                </button>
             </div>
           </dialog>
           <ToastContainer

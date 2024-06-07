@@ -1,137 +1,179 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect ,useState} from 'react'
 import { Link } from 'react-router-dom';
-import axiosClient from '../axiosClient';
-import moment from 'moment';
+import moment from 'moment-timezone';
+import 'moment-timezone/builds/moment-timezone-with-data';
+import axios from 'axios';
+import { hubStaffClient } from '../axiosClient';
+
+
 
 function Attendance() {
-  
 
-   const [attendance, setAttendanceData] = useState([]);
-   const [tabIndex, setTabIndex] = useState();
-   const [_id, setEmpId] = useState("");
-   const [attdance_date, setAttDate] = useState("");
- 
 
-   const tabs = [
-      {
-         text: 'YOUR ATTENDANCE LIST'
-      },
-      {
-         text: 'EMPLOYEE LIST ATTENDANCE'
-      }
-   ]
+   const [organizations, setOrganizations] = useState([])
+   const [organization_id, setOrganization_id] = useState("")
+   const [hubstaff_code, setHubstaff_code] =  useState("")
+
+
+   const [startDate, setStartDate] = useState('');
+   const [endDate, setEndDate] = useState('');
+   const [currentTime, setCurrentTime] = useState(null);
+   const [timeZone, setTimeZone] = useState('America/Phoenix');
+
 
    useEffect(()=>{
-      getListAttendance();
-      setTabIndex(0)
-     
+    if(!localStorage.getItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN")){
+       const queryParams = new URLSearchParams(window.location.search);
+       const authorizationCode = queryParams.get('code');
+       setHubstaff_code(authorizationCode)
+       if(authorizationCode){
+         document.getElementById('my_access_hubstaff').showModal()
+       }
+    }else{
+      hubStaffClient.get('/organizations')
+      .then(result => {
+        setOrganizations(result.data.organizations);
+        setOrganization_id(result.data.organizations[0].id)
+      })
+    }
+
    },[])
 
-   const calculateTotalHours = (time_in, time_out) => {
+
   
-      const diffWithoutBreak = moment.duration(moment(time_out).diff(moment(time_in)));
-      const diff = moment.duration(diffWithoutBreak.asMilliseconds() - 60 * 60 * 1000);
-      const hours = Math.floor(diff.asHours());
-      const minutes = Math.floor(diff.asMinutes()) % 60;
-      return `${hours} hours ${minutes} minutes`;
-  
+async function getAccessToken() {
+   try {
+        const tokenEndpoint = 'https://account.hubstaff.com/access_tokens';
+
+        const data = {
+            grant_type: 'authorization_code',
+            code: hubstaff_code,
+            redirect_uri: 'http://localhost:3000/attendance',
+            scope: 'openid'
+          };
+                                       
+          const headers = {
+             'Authorization': `Basic ${btoa(`${import.meta.env.VITE_API_HUBSTAFF_CLIENT_ID}:${import.meta.env.VITE_API_HUBSTAFF_CLIENT_SECRET}`)}`,
+             'Content-Type': 'application/x-www-form-urlencoded'
+          };
+                                    
+            axios.post(tokenEndpoint, new URLSearchParams(data).toString(), { headers })
+            .then(response => {
+              localStorage.setItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN", JSON.stringify(response.data));
+              document.getElementById('my_access_hubstaff').close();
+              window.location.reload();
+            })
+   } catch (error) {
+     console.error('Error fetching access token:', error);
+     localStorage.removeItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN");
+     window.location.href = '/dashboard';
+     throw error;
+   }
+ }
+
+
+ 
+
+
+
+
+
+    const handleStartDateChange = (e) => {
+      setStartDate(e.target.value);
     };
-
-   const getListAttendance = () => {
-      Promise.all([
-         getDataList('user'), 
-         getDataList('employee'), 
-         getDataList('attendance'), 
-       ])
-         .then((data) => {
-         var yesterday = new Date(moment(new Date()).format("L"));
-         yesterday.setDate(yesterday.getDate() - 2);
-
-        
-
-          const pastDate = moment(yesterday).format("L");
-
-          const id = data[1].data.find(d => d.employee_email === data[0].email)?.id
-          const attendanceArray = data[2].data.filter(d => d.employee_id === id);
-          const date = attendanceArray.find(d => d.attendance_date === moment(new Date()).format("L"))?.attendance_date;
-          setAttDate(date);
-          setAttendanceData(attendanceArray.map(d => {
-             return {...d, render: calculateTotalHours(d.attendance_time_in, d.attendance_time_out)}
-          }).sort((a, b) => b.id - a.id))
-    
-           setEmpId(id);
-
-
-          
-
-           
-    
-         })
-         .catch((err) => {
-             console.error(err);
-         });
-   }
-
-   
-  useEffect(()=>{
-   getListAttendance();
-},[])
-
-
-
-   const getDataList = async (path) => {
-      try {
-        const res = await axiosClient.get(`/${path}`)
-        return res.data;
-      } catch (err) {
-         const {response} = err;
-         if(response &&  response.status  === 422){
-           console.log(response.data)
-         }
-      }
-   } 
   
+    const handleEndDateChange = (e) => {
+      setEndDate(e.target.value);
+    };
+ 
+
+   const handleAttendance = (id) => {
 
 
-   const handleShowAllEmployeeAttedance = (ind) => {
-      setAttendanceData([])
-      if(ind === 1){
-         setTabIndex(1)
-          axiosClient.get(`/attendance/employee/${_id}`)
-        .then(({data})=>{
-         setAttendanceData(data)
-   
-      })
-      .catch((err)=>{
-         const {response} = err;
-         if(response &&  response.status  === 422){
-           console.log(response.data)
-         }
-      })
-      }else{
-         setTabIndex(0)
-         getListAttendance();
-      }
+    //1744512
+
+      const startDateISO8601 = new Date(startDate).toISOString();
+      const endDateISO8601 = new Date(endDate).toISOString();
+
+      console.log(startDateISO8601, endDateISO8601)
+
+
+      const baseURL = `/organizations/${id}/attendance_shifts`; 
+
+      const params = {
+        'date[start]': startDateISO8601,
+        'date[stop]': endDateISO8601,
+        'user_id': '1744512',
+        include: 'users',
+
+    };
     
-   }
+    const config = {
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        params: params
+    };
+    
+    hubStaffClient.get(baseURL, config)
+        .then(response => {
+            console.log('Response data:', response.data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    
+
+ 
+  }
+
+
+
+
 
    
   return (
     <div className="ml-auto mb-6 lg:w-[75%] xl:w-[80%] 2xl:w-[85%]">
           <div className=" shadow rounded-lg p-4 sm:p-6 xl:p-8 m-5">
 
+          <div className="mb-5 flex gap-2">
+          <input
+        type="date"
+        placeholder="Start Date"
+        value={startDate}
+        className="input input-bordered w-full max-w-xs"
+        onChange={handleStartDateChange}
+      />
+      <input
+        type="date"
+        placeholder="End Date"
+        value={endDate}
+        className="input input-bordered w-full max-w-xs"
+        onChange={handleEndDateChange}
+      />
+
+
+    </div>
+
+
+
                <div className="mb-4 flex items-center justify-between">
                <div role="tablist" className="tabs tabs-boxed">
-                  {tabs.map((tab, i)=> {
+                  {organizations.map((org)=> {
                      return (
-                        <a role="tab" key={i} className={`tab ${tabIndex === i && "bg-[#00b894] text-white"}  font-bold`} onClick={()=> {
-                           handleShowAllEmployeeAttedance(i)
-                        }}>{tab.text}</a>
+                        <a role="tab" key={org.id} className={`tab ${org.id === organization_id ?  "bg-[#00b894]" : ""}  text-white font-bold`} onClick={()=> {
+                           setOrganization_id(org.id)
+                           handleAttendance(org.id)
+                        }}>{org.name}</a>
                      )
                   })}
-              
+
+          
+
                </div>
+   
                   <div className="flex-shrink-0 flex justify-center items-center gap-3">
+              
                   <Link to='/attendance/addNewAttendance' className='shadow-md p-1 bg-[#00b894] rounded-md text-white cursor-pointer transition-all ease-in opacity-75 hover:opacity-100'  >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -148,11 +190,11 @@ function Attendance() {
                            <table className="min-w-full divide-y divide-gray-200">
                               <thead>
                                  <tr>
-                                    {tabIndex === 1 && (
+                                    
                                        <th scope="col" className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                        Employee Name
                                      </th>
-                                    )}
+   
                                     <th scope="col" className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                       Time-in
                                     </th>
@@ -177,7 +219,7 @@ function Attendance() {
                                  </tr>
                               </thead>
                               <tbody>
-                                       {!attendance.length && (
+                                       {/* {!attendance.length && (
                                           <tr>
                                              <td className="p-4 whitespace-nowrap text-sm font-normal text-gray-900" colSpan="4">
                                                 <div className='ml-5'>
@@ -229,7 +271,7 @@ function Attendance() {
                                     
                                    
                                           )
-                                       })}
+                                       })} */}
                               </tbody>
                            </table>
                         </div>
@@ -237,6 +279,20 @@ function Attendance() {
                   </div>
                </div>
       </div>
+
+      <dialog id="my_access_hubstaff" className="modal">
+            <div className="modal-box">
+              <form method="dialog">
+                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={()=> window.location.href = "/dashboard"}>✕</button>
+              </form>
+              <h3 className="font-bold text-lg">Hello from WorkwiseHR.</h3>
+              <p className="py-2 opacity-70 text-sm">To get your access key please click the button below.</p>
+                <button className="btn mt-2 text-black bg-white hover:opacity-100" onClick={()=> getAccessToken()}>
+                 <img src="hubstafflogo-removebg-preview.png" className="w-10 opacity-70" />
+                  <span className="opacity-70">GET ACCESS KEY FOR HUBSTAFF</span>
+                </button>
+            </div>
+   </dialog>
 
   
 </div> 
