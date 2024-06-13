@@ -575,7 +575,7 @@ function DefaultLayout() {
         || link.path === '/leave'
         || link.path === '/history'
         || link.path === '/members'
-        || link.path === '/compensation'
+        || link.path === '/payroll'
       ) 
         .map((link ,i) => (
              <li key={i} >
