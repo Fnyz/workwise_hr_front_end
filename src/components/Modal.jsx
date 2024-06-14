@@ -28,14 +28,14 @@ function Modal({title, payload, setPayload, handleSubmitPayload,  data, data_id,
                  </div>
                  <select value={payload.leave_type || ""} name='leave_type'  className="select select-bordered w-full  uppercase font-semibold opacity-80" onChange={(e)=> {
         
-                       const leaveNumberOfDays = e.target.options[e.target.selectedIndex].dataset.numberOfDays;
-                       setPayload({...payload, [e.target.name]:e.target.value, days:leaveNumberOfDays , start_date: "", end_date: ""})
+
+                       setPayload({...payload, [e.target.name]:e.target.value})
 
 
                  }}>
                     <option className='cursor-not-allowed' >Select here</option>
                     {data.map((Ltype, i)=>{
-                        return <option key={i} value={Ltype.id}  data-number-of-days={Ltype.leave_number_of_days}>{Ltype.leave_type} {`(${Ltype.leave_number_of_days} ${Ltype.leave_number_of_days > 1 ? "days": "day"}) `}</option>
+                        return <option key={i} value={Ltype.id}  data-number-of-days={Ltype.leave_number_of_days}>{Ltype.leave_type} </option>
                     })}
                  </select>
                  <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['leave_type_id']}</p>
@@ -47,16 +47,18 @@ function Modal({title, payload, setPayload, handleSubmitPayload,  data, data_id,
                      <span className="label-text">Choose head for the approval:</span>
                 </div>
               
-                <select  name="head_id" value={payload.head_id || ""} className="select select-bordered w-full" onChange={(e)=> {
+                <select  name="head_id"  value={payload.head_id || ""} className="select select-bordered w-full" onChange={(e)=> {
                     let emp_rle = payload.hris_hr_or_admin.find(d => d.head_id === e.target.value)?.emp_role
                     setPayload({...payload, [e.target.name]:e.target.value, emp_role:emp_rle})
 
                     }}>
                     <option >Select here</option>
                     {payload.hris_hr_or_admin.map((hr,i)=>{
-                        return <option key={i} value={hr.head_id}>{hr.employee_full_name}</option>
+                        return <option key={i} disabled={!hr.employee_full_name ? true:false} value={hr.head_id}>{hr.employee_full_name ? hr.employee_full_name : "HR or ADMIN has no position or department." }</option>
                     })}
+                      
                 </select>
+            
                 </>
              ):(
 
@@ -142,9 +144,8 @@ function Modal({title, payload, setPayload, handleSubmitPayload,  data, data_id,
                             }, 3000);
                             return;
                         }else{
-                            const newDate = new Date(e.target.value);
-                            newDate.setDate(newDate.getDate() + payload.days)
-                            setPayload({...payload, [e.target.name]:e.target.value, end_date:moment(newDate).format("YYYY-MM-DD")})
+        
+                            setPayload({...payload, [e.target.name]:e.target.value})
                         }
                         
                     }} />
@@ -173,13 +174,7 @@ function Modal({title, payload, setPayload, handleSubmitPayload,  data, data_id,
 
         {title === "LEAVE TYPE" && (
             <>
-            <label className="form-control w-full">
-                <div className="label">
-                    <span className="label-text">Number of Days:</span>
-                </div>
-                <input type="number" value={payload.number_of_days || ""} name="number_of_days" placeholder="Type here" className="input input-bordered w-full" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} />
-                <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['leave_number_of_days']}</p>
-            </label>
+   
             <label className="form-control w-full">
                 <div className="label">
                     <span className="label-text">Status:</span>

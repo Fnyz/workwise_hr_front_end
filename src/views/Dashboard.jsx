@@ -26,8 +26,15 @@ function Dashboard() {
      const [load, setLoading] = useState(false);
   
     useEffect(()=>{
-       
+
         setLoading(true)
+        handlefetch_data_database();
+    
+      },[]);
+
+      const handlefetch_data_database = () => {
+
+
         Promise.all(
             [
                 axiosClient.get("/employee", {
@@ -86,8 +93,8 @@ function Dashboard() {
            
             
         })
-    
-      },[])
+
+      }
 
       const handleSetAccount = (e) => {
         setLoadSubmit(true)
@@ -341,9 +348,11 @@ function Dashboard() {
                                         <p className="py-6 opacity-70 font-medium max-md:text-sm">Ooopps, looks like you don't have a position yet. <br></br> Please use your <span className="font-bold text-red-500">EMPLOYEE ID</span> to become an employee.</p> 
 
                                         <button className="btn bg-[#00b894] opacity-70 max-md:w-full text-white hover:bg-[#00b894] hover:opacity-100 transition-all ease-in" onClick={()=> {
+                                    
                                         setLoadingButton(true)
                                         axiosClient.get("/user")
                                         .then((user)=>{
+                                            handlefetch_data_database();
                                             setLoadSubmit(false)
                                             document.getElementById('my_modal_5').showModal();
                                             setLoadingButton(false)
@@ -422,6 +431,7 @@ function Dashboard() {
                                         <p className="py-6 opacity-70 font-medium max-md:text-sm">Look like no ADMIN or HR role in this application, <br className=" max-md:hidden block"></br> so you can set your account to two role now to manage this application.</p> 
                                     <button className="btn bg-[#00b894] opacity-70 max-md:w-full text-white hover:bg-[#00b894] hover:opacity-100 transition-all ease-in" onClick={()=> {
                                        setLoadingButton(true)
+                                     
                                         axiosClient.get("/user")
                                         .then((user)=>{
                                             setLoadingButton(false)

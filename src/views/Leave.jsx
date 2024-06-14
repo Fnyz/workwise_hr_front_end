@@ -170,7 +170,7 @@ function Leave() {
   
         break;
       case 1:
-        setShowButton(true);
+        setShowButton(false);
         getAllLeave('single');
     
         break;
@@ -189,7 +189,7 @@ function Leave() {
   useEffect(()=>{
     getEmployeeDetails();
     getHoliday()
-    setShowButton(true)
+  
  },[])
 
  
@@ -330,7 +330,7 @@ const getEmployeeDetails = () => {
     getDataList('user')
    ])
       .then(async (d) => {
-       
+
        const EmpId = d[0].data.find(emp => emp.employee_email === d[1].email).id;
        const employee_department_id = d[0].data.find(emp => emp.employee_email === d[1].email).department_id
 
@@ -343,7 +343,13 @@ const getEmployeeDetails = () => {
               type: type,
               search: srch,
             }
+
+            
           })
+
+          if(data.data && type === "single"){
+            setShowButton(true);
+          }
          
       
           setDepartment_id(employee_department_id)
@@ -579,7 +585,12 @@ const getEmployeeDetails = () => {
          }
 
          if(!payload.employee_id){
-          alert("DON'T HAVE A DEPARTMENT HEAD , PLEASE CONTACT HR OR ADMIN FOR THAT POSITION.");
+          swal({
+            title: "Oooops!",
+            text: "DON'T HAVE A DEPARTMENT HEAD , PLEASE CONTACT HR OR ADMIN FOR THAT POSITION.",
+            icon: "warning",
+            dangerMode: true,
+          })
           return;
          }
    
@@ -790,8 +801,16 @@ const getEmployeeDetails = () => {
                     document.getElementById('my_modal_5').showModal()
                     if(parseInt(tabIndex) === 2) {
                       setModalLoad(true)
+
+                      
                       if(!department_id) {
-                        return alert("You don't have a department please update your account and add a department.");
+                        swal({
+                          title: "Oooops!",
+                          text: "You don't have a department please update your account and add a department.",
+                          icon: "warning",
+                          dangerMode: true,
+                        })
+                        return;
                       }
 
                     
@@ -815,6 +834,8 @@ const getEmployeeDetails = () => {
                         getDataList('user')
                        ])
                         .then((data) => {
+
+                        
                              setModalLoad(false)
                              const EmpId = data[1].data.find(emp => emp.employee_email === data[2].email).id;
                              setDepartment(data[0].data.data)
@@ -824,6 +845,8 @@ const getEmployeeDetails = () => {
                             });
                        
                              getLeaveType(true) 
+
+             
                          
                           })
                           .catch((err) => {
