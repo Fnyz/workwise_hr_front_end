@@ -616,6 +616,7 @@ function DefaultLayout() {
       case 'EMPLOYEE':
         return links.filter(link => link.path === '/dashboard'
         || link.path === '/notification'
+        || link.path === '/payslip'
         || link.path === '/leave'
       ) 
         .map((link ,i) => (
