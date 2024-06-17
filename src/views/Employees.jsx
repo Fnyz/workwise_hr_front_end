@@ -42,7 +42,7 @@ const Items = ({empList, changeStatus, positions, departments, load}) => {
                </td>
                <td className='whitespace-nowrap'>
                  
-                  <span className="font-semibold opacity-85"> {departments.find(d => parseInt(d.id) === parseInt(emp.department_id))?.department} - {positions.find(p => parseInt(p.position_id) === parseInt(emp.position_id))?.position} </span>
+                  <span className="font-semibold opacity-85"> {departments.find(d => parseInt(d.id) === parseInt(emp.department_id))?.department || "NO DEPARTMENT"} - {positions.find(p => parseInt(p.position_id) === parseInt(emp.position_id))?.position || "NO POSITION"} </span>
                   <br/>
                   <span className="badge badge-ghost badge-sm"><span className="text-red-500 opacity-70 font-semibold uppercase">{ emp.employee_role.trim() === "NOT EMPLOYED" ? emp?.employee_reason_status : departments.find(d => d.employee_id === emp.id)?.remarks || emp.employee_role} </span></span>
                </td>
@@ -289,8 +289,7 @@ function Employees() {
          })
      
          setLoading(false);
-     
-         setEmployeeList(res.data.data.filter(r => r.employee_email !== user.email));
+         setEmployeeList(res.data.data);
          setPagination(res.data.meta.links);
  
 
@@ -477,12 +476,12 @@ function Employees() {
                                  
                                        <thead>
                                           <tr>
-                                          <th className='tracking-wider'>Department</th>
-                                          <th className='tracking-wider'>Employee name</th>
-                                          <th className='tracking-wider'>Start date</th>
-                                          <th className='tracking-wider'>End date</th>
-                                          <th className='tracking-wider'>Created at</th>
-                                          <th className='tracking-wider'>Status</th>
+                                          <th className='tracking-wider uppercase'>Employee name</th>
+                                          <th className='tracking-wider uppercase'>Department / Position / Role</th>
+                                          <th className='tracking-wider uppercase'>Start date</th>
+                                          <th className='tracking-wider uppercase'>End date</th>
+                                          <th className='tracking-wider uppercase'>Created at</th>
+                                          <th className='tracking-wider uppercase'>Status</th>
                                           <th className='tracking-wider max-md:hidden'>Action</th>
                                           </tr>
                                        </thead>
@@ -591,7 +590,7 @@ function Employees() {
                   <span className="label-text">Status</span>
                </div>
                <select ref={refStat} className="select select-bordered " onChange={(e)=> setPayload({...payload, employee_status: e.target.value})}>
-                  <option  defaultValue>Select here</option>
+                  <option>Select here</option>
                   <option value="Active" >ACTIVE</option>
                   <option value="Inactive">INACTIVE</option>
                </select>
@@ -603,7 +602,7 @@ function Employees() {
                   <span className="label-text font-semibold">Gender</span>
                </div>
                <select ref={refGen} className="select select-bordered" onChange={(e)=> setPayload({...payload, employee_gender: e.target.value})}>
-                  <option  defaultValue>Select here</option>
+                  <option>Select here</option>
                   <option value="M" className="font-semibold">MALE</option>
                   <option value="F" className="font-semibold">FEMALE</option>
                </select>
@@ -614,7 +613,7 @@ function Employees() {
                   <span className="label-text font-semibold">Role</span>
                </div>
                <select ref={refRole} className="select select-bordered" onChange={(e)=> setPayload({...payload, employee_role: e.target.value})}>
-                  <option defaultValue>Select here</option>
+                  <option>Select here</option>
                   {allRole && allRole.map(r => {
                      return (
                         <option value={r} key={r} className="font-semibold">{r}</option>
@@ -628,7 +627,7 @@ function Employees() {
                   <span className="label-text font-semibold">Department</span>
                </div>
                <select ref={refDep} className="select select-bordered" onChange={(e)=> setPayload({...payload, department_id: e.target.value})}>
-                  <option  defaultValue>Select here</option>
+                  <option>Select here</option>
                   {department.map((de)=>{
                      return <option key={de.id} value={de.id} className="font-semibold">{de.department}</option> ;
                   })}
@@ -641,7 +640,7 @@ function Employees() {
                   <span className="label-text font-semibold">Position</span>
                </div>
                <select ref={refPos} className="select select-bordered" onChange={(e)=> setPayload({...payload, position_id: e.target.value})}>
-                  <option defaultValue>Select here</option>
+                  <option>Select here</option>
                   {position.map((pos)=>{
                      return <option key={pos.position_id} value={pos.position_id} className="font-semibold">{pos.position}</option> ;
                   })}

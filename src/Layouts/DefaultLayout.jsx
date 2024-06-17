@@ -9,7 +9,6 @@ import { Link } from 'react-router-dom';
 import moment from 'moment';
 import "./../App.css"
 
-
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -20,7 +19,7 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
     case "Profile":
       html_render = (
         <form  method="dialog">
-        <span className="opacity-60 text-sm">See all your profile info below.</span>
+        <p className="opacity-60 text-sm">See all your profile info below.</p>
         <div className="avatar mt-5 w-full flex-col flex justify-center items-center gap-3">
            <div className="w-24 rounded-full mt-4 ring ring-[#3498db] ring-offset-base-100 ring-offset-2">
               <img  src={
@@ -41,11 +40,11 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
         </div>
         <label className="input input-bordered mt-2 flex items-center gap-2 opacity-50 cursor-not-allowed">
           Employee ID:
-           <input disabled  value={payload.employee_id || ""} name="employee_id"  type="text" className="grow cursor-not-allowed"  placeholder="i.g Onsoure000***" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
+           <input disabled  value={payload.employee_id || ""} name="employee_id"  type="text" className="grow cursor-not-allowed font-semibold"  placeholder="i.g Onsoure000***" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
         </label>
         <label className="input input-bordered mt-2 flex items-center gap-2">
           Full name:
-           <input value={payload.employee_name || ""}  name="employee_name"   type="text" className="grow" placeholder="i.g marcus"  
+           <input value={payload.employee_name || ""}  name="employee_name"   type="text" className="grow font-semibold" placeholder="i.g marcus"  
            onChange={(e)=> {
             setPayload({...payload, [e.target.name]: e.target.value })
            }}  
@@ -53,28 +52,28 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
         </label>
         <label className="input input-bordered mt-2 flex items-center gap-2 ">
           Email:
-           <input value={payload.employee_email || ""} name="employee_email" disabled={dis}  type="text" className={`grow ${dis && "opacity-50"}`} placeholder="i.g marcus" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
+           <input value={payload.employee_email || ""} name="employee_email" disabled={dis}  type="text" className={`grow ${dis && "opacity-50"} font-semibold`} placeholder="i.g marcus" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })}  />
 
           
         </label>
         <label className="input input-bordered mt-2 flex items-center gap-2">
            Address:
-           <input value={payload.employee_address || ""} name="employee_address"  type="text" className="grow" placeholder="i.g address" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} />
+           <input value={payload.employee_address || ""} name="employee_address"  type="text" className="grow font-semibold" placeholder="Type here..." onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} />
         </label>
 
         <label className="input input-bordered mt-2 flex items-center gap-2">
            Contact:
-           <input value={payload.employee_phone || ""} name="employee_phone"  type="number" className="grow" placeholder="i.g 0969*****" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} />
+           <input value={payload.employee_phone || ""} name="employee_phone"  type="number" className="grow font-semibold" placeholder="Type here..." onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} />
         </label>
 
         <label className="form-control w-full mt-2">
            <div className="label">
               <span className="label-text">Gender:</span>
            </div>
-           <select value={payload.employee_gender || ""} name="employee_gender" className="select select-bordered" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} >
-              <option  defaultValue>Select here</option>
-              <option value="M">MALE</option>
-              <option value="F">FEMALE</option>
+           <select value={payload.employee_gender || ""} name="employee_gender" className="select select-bordered font-semibold" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} >
+              <option  defaultValue>Choose here...</option>
+              <option value="M" className='font-semibold'>MALE</option>
+              <option value="F" className='font-semibold'>FEMALE</option>
            </select>
         </label>
         {role === "HR" || role === "ADMIN" ? (
@@ -83,11 +82,11 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
             <div className="label">
                 <span className="label-text">Role:</span>
             </div>
-            <select value={payload.employee_role || ""} name="employee_role"  className="select select-bordered" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} >
-                <option defaultValue>Select here</option>
+            <select value={payload.employee_role || ""} name="employee_role"  className="select select-bordered font-semibold" onChange={(e)=>  setPayload({...payload, [e.target.name]: e.target.value })} >
+                <option defaultValue>Choose here...</option>
                 {allRole && allRole.map(r => {
                   return (
-                      <option value={r} key={r}>{r}</option>
+                      <option value={r} key={r} className='font-semibold'>{r}</option>
                   )
                 })}
             </select>
@@ -97,10 +96,10 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
             <div className="label">
                 <span className="label-text">Department:</span>
             </div>
-            <select value={payload.department_id || ""} name="department_id" className="select select-bordered"onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} >
-                <option  defaultValue>Select here</option>
+            <select value={payload.department_id || ""} name="department_id" className="select select-bordered font-semibold"onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} >
+                <option  defaultValue>Choose here...</option>
                 {allDepartment.map((de)=>{
-                  return <option key={de.id} value={de.id}>{de.department}</option> 
+                  return <option key={de.id} value={de.id} className='font-semibold'>{de.department}</option> 
                 })}
               
             </select>
@@ -110,10 +109,10 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
             <div className="label">
                 <span className="label-text">Position:</span>
             </div>
-            <select value={payload.position_id || ""} name="position_id" className="select select-bordered" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} >
-                <option defaultValue>Select here</option>
+            <select value={payload.position_id || ""} name="position_id" className="select select-bordered font-semibold" onChange={(e)=> setPayload({...payload, [e.target.name]: e.target.value })} >
+                <option defaultValue>Select here...</option>
                 {allPosition.map((pos)=>{
-                  return <option key={pos.position_id} value={pos.position_id}>{pos.position}</option> 
+                  return <option key={pos.position_id} value={pos.position_id} className='font-semibold'>{pos.position}</option> 
                 })}
             </select>
           </label>
@@ -124,6 +123,9 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
 
        
         <div className="modal-action">
+            <Link to={`/employees/${payload.id}/update`} className="btn btn-success text-white" onClick={()=>{
+               document.getElementById('my_settings_3').close()
+            }}>SEE MORE</Link>
             <button type='button' className="btn bg-[#3498db] hover:bg-[#3498db] text-white w-[50%] max-md:w-full" onClick={handleSubmit}>UPDATE ACCOUNT</button>
         </div>
         </form>
@@ -276,6 +278,7 @@ function DefaultLayout() {
 
       break;
     case "Profile":
+     
       if(!payload.employee_image_url){
         payload.employee_image = payload.employee_image ? payload.employee_image : "";
       }else{
@@ -295,7 +298,6 @@ function DefaultLayout() {
         position_id:payload.position_id,
         action: 'Employee_update_data'
       }
-
 
 
       if(role === "HR" || role === "ADMIN"){
@@ -575,7 +577,7 @@ function DefaultLayout() {
         || link.path === '/leave'
         || link.path === '/history'
         || link.path === '/members'
-        || link.path === '/payroll'
+        || link.path === '/paycheck/rates'
       ) 
         .map((link ,i) => (
              <li key={i} >
@@ -606,7 +608,7 @@ function DefaultLayout() {
                   return ;
                 }
               
-             }}  aria-label="dashboard" className={`${link.path === "/leave" && !canFileLeave ? "cursor-not-allowed" : ""} relative px-4 py-3 flex items-center space-x-4 rounded-xl ${link.name.toLowerCase()=== pathname.split('/')[1] ? "rounded-xl text-white bg-gradient-to-r from-[#3498db] to-[#3498db]" : " group"} `}>
+             }}  aria-label="dashboard" className={`${link.path === "/leave" && !canFileLeave ? "cursor-not-allowed" : ""} shadow relative px-4 py-3 flex items-center space-x-4 rounded-xl ${link.name.toLowerCase()=== pathname.split('/')[1] ? "rounded-xl text-white bg-gradient-to-r from-[#3498db] to-[#3498db] " : " group "} `}>
                  {link.path === "/leave" ? <IconFile authorize_leave={canFileLeave} icon={link.icons} user={user}/> : link.icons}
                  <span  className="-mr-1 font-medium">{link.name}</span>
              </Link>
@@ -616,7 +618,7 @@ function DefaultLayout() {
       case 'EMPLOYEE':
         return links.filter(link => link.path === '/dashboard'
         || link.path === '/notification'
-        || link.path === '/payslip'
+        || link.path === '/paycheck/payslip'
         || link.path === '/leave'
       ) 
         .map((link ,i) => (
@@ -738,7 +740,7 @@ function DefaultLayout() {
                     )}
                     {role && (
                       <>
-                      <span className="hidden opacity-70 lg:block text-sm font-semibold">{role === "EMPLOYEE" ? position : role} {role === "NOT EMPLOYED" ? "" : department && (<>/ <span className="text-blue-500">{department}</span></> )} </span>
+                      <span className="hidden opacity-70 lg:block text-sm font-semibold">{role === "EMPLOYEE" ? position : role} {role === "NOT EMPLOYED" ? "" : department ? (<>/ <span className="text-blue-500">{department}</span></> ) : "/ NO DEPARTMENT"} </span>
                       </>
                     )}
                    
@@ -752,12 +754,12 @@ function DefaultLayout() {
           </div> 
         )}
         
-          <div className="px-6  pt-4 flex justify-between items-center border-t">
+          <div className="flex justify-center border-t w-full">
               <button onClick={logOut} className="px-4 py-3 flex items-center space-x-4 rounded-md text-gray-600 group">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  <span className="group-hover:text-gray-700">Logout</span>
+                  <span className="group-hover:text-gray-700 font-semibold uppercase">Log-out</span>
               </button>
           </div>
       </aside>
@@ -787,7 +789,7 @@ function DefaultLayout() {
                            {pathname.split("/").slice(1, pathname.split("/").length).map((pt, i)=>{
                               return (
                                 <li   key={i}>
-                                  <Link  to={pathname.split("/").slice(1, pathname.split("/").length)[0] === pt ? `/${pt}`: `${pathname.split("/").slice(1, pathname.split("/").length)[0]}/${pt}` }>
+                                  <Link disabled  to={pathname.split("/").slice(1, pathname.split("/").length)[0] === pt ? pt === "paycheck" ? '/paycheck/rates' : `/${pt}` : `${pathname.split("/").slice(1, pathname.split("/").length)[0]}/${pt}` }>
                                        <h5  hidden className={`text-sm  text-gray-600 font-medium block capitalize ${pt === id ? "cursor-not-allowed" : "cursor-pointer"}`} >{pt}</h5>
                                   </Link>
                                 </li> 
@@ -819,7 +821,8 @@ function DefaultLayout() {
                    
                       <div>
                         <div className="dropdown dropdown-end">
-                          <div tabIndex={0} role="button" className={`btn btn-ghost btn-circle btn-md avatar ${user.email_verified_at ? "offline" : "online"} placeholder`}>
+                    
+                          <div tabIndex={0} role="button" className={`btn btn-ghost btn-circle btn-md avatar ${user.email_verified_at && department  ? "offline" : "online"}  placeholder`}>
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
@@ -840,27 +843,66 @@ function DefaultLayout() {
                               </a>
                             </li>
                             )}
-                            <li><a onClick={()=>{
+                            <li>
+                              <div>
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+                                <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0 0 21.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 0 0 3.065 7.097A9.716 9.716 0 0 0 12 21.75a9.716 9.716 0 0 0 6.685-2.653Zm-12.54-1.285A7.486 7.486 0 0 1 12 15a7.486 7.486 0 0 1 5.855 2.812A8.224 8.224 0 0 1 12 20.25a8.224 8.224 0 0 1-5.855-2.438ZM15.75 9a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" clipRule="evenodd" />
+                              </svg>
+
+                              <a className=' font-semibold' onClick={()=>{
+                                fetchData();
                                 setChooseSettings("Profile")
                                 setPayload(employeeData);
                                 document.getElementById('my_settings_3').showModal()
-                              }}>Profile</a></li>
+                              }}>Profile
+                              </a>
+                              {!department && (
+                                <span className="badge badge-error badge-sm"></span>
+                              )}
+                              </div>
+                           
+                              </li>
                               {user.provider === "CREDENTIAL" && (
-                                <li><a onClick={()=>{
+                                <li>
+                                  <div>
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+                                    <path fillRule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clipRule="evenodd" />
+                                  </svg>
+
+                                  <a className='font-semibold' onClick={()=>{
                                     setChooseSettings("Change Password")
                                     document.getElementById('my_settings_3').showModal()
                                     setPayload({});
-                                  }}>Change password</a></li>
-                              )}
+                                  }}>Change password
+                                  </a>
+                                  </div>
+                                  </li>
+                             )} 
                               {user.provider === "CREDENTIAL" && (
-                                <li><a onClick={()=>{
+                                <li>
+                                  <div>
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+                                    <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+                                    <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+                                  </svg>
+                                  <a className='font-semibold' onClick={()=>{
                                  setPayload({...payload, employee_email:employeeData.employee_email});
                                  setChooseSettings("Change Email Address")
                                  document.getElementById('my_settings_3').showModal()
-                               }}>Change email address</a></li>
-                              )}
+                               }}>Change email address</a>
 
-                            <li className='max-md:blockhidden'><a onClick={logOut}>Log-out</a></li>
+                                  </div>
+                               </li>
+                              )} 
+                            <li className='max-md:block hidden font-semibold'>
+                              <div>
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+                              <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v9a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM6.166 5.106a.75.75 0 0 1 0 1.06 8.25 8.25 0 1 0 11.668 0 .75.75 0 1 1 1.06-1.06c3.808 3.807 3.808 9.98 0 13.788-3.807 3.808-9.98 3.808-13.788 0-3.808-3.807-3.808-9.98 0-13.788a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+                            </svg>
+
+                              <a onClick={logOut}>Log-out</a>
+                              </div>
+                              </li>
                           </ul>
                         </div>
                       </div>
