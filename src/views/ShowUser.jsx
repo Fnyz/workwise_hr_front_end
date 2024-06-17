@@ -15,13 +15,14 @@ const CalendarContainer = ({ children }) => {
 function ShowUser() {
 
   const navigate = useNavigate();
-  
-
+  const [_roll_id, setRoll_id] = useState("");
+  const [payload, setPayload] = useState({});
   const {id} =  useParams();
   const [total_leaves_have, setTotalLeaves_have] = useState(null);
   const [startDate, setStartDate] = useState(new Date());
   const [loader, setloader] = useState(false);
   const [allrole, setRole] = useState([])
+  const [error, setError] = useState(null);
   const [empData, setEmpData] = useState({
     employee_id: id,
     employee_position: [],
@@ -103,6 +104,217 @@ function ShowUser() {
       contact: "",
     },
   });
+
+
+  const getListOfPayroll = () => {
+    axiosClient.get("/rates")
+    .then((data)=>{
+      
+      const res = data.data.find(d => d.emp_id === id);
+      if(!res){
+        setRoll_id("");
+        return null;
+      }
+
+         
+        setRoll_id(res.compe_id);
+     
+        const {
+          rates_night_diff,
+          rates_basic_salary,
+          rates_thirteenth_pay,
+          rates_review_adjustments,
+          rates_account_num,
+          rates_acount_name,
+          rates_allowance
+        } = res;
+
+        const val = {
+          'basic_night_diff': rates_night_diff,
+          'basic_salary': rates_basic_salary,
+          'basic_allowance': rates_allowance,
+          'thirteenth_pay': rates_thirteenth_pay,
+          'review_adjustments': rates_review_adjustments,
+          'account_number': rates_account_num,
+          'bank_name': rates_acount_name,
+      };
+
+      
+
+      const total_montly = val.basic_salary + val.basic_night_diff + val.basic_allowance;
+      const bi_montly = val.basic_salary / 2 
+      const night_diff = val.basic_night_diff / 2
+      const allowance = val.basic_allowance / 2 
+      const daily = val.basic_salary / 21.75
+      const hourly = daily / 8
+      const hourly_rate = (2.1 / 100) * hourly
+
+        setPayload({
+          ...payload,
+          ...val,
+          total_montly,
+          bi_montly,
+          night_diff,
+          allowance,
+          daily,
+          hourly,
+          hourly_rate,
+
+        })
+
+
+    })
+  }
+
+
+
+  const handleSubmitPayroll = (e) => {
+    e.preventDefault();
+
+    const data = {
+      'employee_id': id,
+      'rates_review_adjustments':payload.review_adjustments,
+      'rates_night_diff': parseFloat(payload.basic_night_diff),
+      'rates_basic_salary': parseFloat(payload.basic_salary),
+      'rates_allowance': parseFloat(payload.basic_allowance),
+      'rates_thirteenth_pay': parseFloat(payload.thirteenth_pay),
+      'rates_account_num': payload.account_number,
+      'rates_acount_name':payload.bank_name,
+  };
+ 
+
+  
+  if(_roll_id){
+    axiosClient.put(`/rates/${_roll_id}?${new URLSearchParams(data).toString()}`)
+    .then((res)=>{
+      getListOfPayroll();
+      setPayload({});
+      document.getElementById('employee_payroll').close();
+      swal({
+        title: "Good job!",
+        text: res.data.message,
+        icon: "success",
+        button: "Okay!",
+      });
+    })
+    .catch((err)=>{
+      const {response} = err;
+      if(response &&  response.status  === 422){
+       setError(response.data.errors)
+       setTimeout(() => {
+         setError(null)
+       }, 2000);
+      }
+    })
+    return;
+  }
+
+
+    axiosClient.post('/rates', data )
+    .then((res)=>{
+    
+      getListOfPayroll();
+      setPayload({});
+      document.getElementById('employee_payroll').close();
+      swal({
+        title: "Good job!",
+        text: res.data.message,
+        icon: "success",
+        button: "Okay!",
+      });
+      
+    })
+    .catch((err)=>{
+      const {response} = err;
+      if(response &&  response.status  === 422){
+       setError(response.data.errors)
+       setTimeout(() => {
+         setError(null)
+       }, 2000);
+      }
+    })   
+  }
+
+  const calculateData = () => {
+
+    const basic_salary = parseFloat(payload?.basic_salary) || 0;
+    const basic_night_diff = parseFloat(payload?.basic_night_diff) || 0;
+    const basic_allowance = parseInt(payload?.basic_allowance) || 0;
+    let bi_montly = parseInt(payload?.bi_montly) || 0;
+    let night_diff = parseInt(payload?.night_diff) || 0;
+    let allowance = parseInt(payload?.allowance) || 0;
+    let daily = parseInt(payload?.daily) || 0;
+    let hourly = parseInt(payload?.hourly) || 0;
+    let hourly_rate = parseInt(payload?.hourly_rate) || 0;
+  
+
+    
+    const total_montly = basic_salary + basic_night_diff + basic_allowance;
+    bi_montly = basic_salary / 2 
+    night_diff = basic_night_diff / 2
+    allowance = basic_allowance / 2 
+    daily = basic_salary / 21.75
+    hourly = daily / 8
+    hourly_rate = (2.1 / 100) * hourly
+ 
+    setPayload({
+      ...payload,
+      total_montly,
+      bi_montly,
+      night_diff,
+      allowance,
+      daily,
+      hourly,
+      hourly_rate
+    })
+
+  }
+  
+
+
+  const calculateSlip = () => {
+
+    const bi_montly = parseFloat(payload?.bi_montly) || 0;
+    const per_hour_day = parseFloat(payload?.per_hour_day) || 0;
+    const tardines_minutes = parseInt(payload?.tardines_minutes) || 0;
+    const tardines_days = parseInt(payload?.tardines_days) || 0;
+  
+    const night_diff = parseFloat(payload?.night_diff) || 0;
+    const holiday_OT = parseFloat(payload?.holiday_OT) || 0;
+    const incentive = parseFloat(payload?.incentive) || 0;
+  
+    const sss = parseFloat(payload?.sss) || 0;
+    const phic = parseFloat(payload?.phic) || 0;
+    const hdmf = parseFloat(payload?.hdmf) || 0;
+  
+    const withholding = parseFloat(payload?.withholding) || 0;
+    const sss_loan = parseFloat(payload?.sss_loan) || 0;
+    const ar_others = parseFloat(payload?.ar_others) || 0;
+    const retro_others = parseFloat(payload?.retro_others) || 0;
+    const allowance = parseFloat(payload?.allowance) || 0;
+  
+  
+    
+  
+    const total_minutes = per_hour_day / 8 * tardines_minutes;
+    const total_days = per_hour_day * tardines_days;
+  
+  
+    const totalAmount = (bi_montly + night_diff + holiday_OT + incentive) - (total_minutes + total_days + sss + phic + hdmf);
+  
+    const totalNetPay = (parseFloat(totalAmount) + parseFloat(retro_others) + parseFloat(allowance)) - (parseFloat(withholding) + parseFloat(sss_loan) + parseFloat(ar_others))
+  
+  
+    
+    setPayload({
+      ...payload,
+      amount: bi_montly,
+      tardines_total_minutes: parseFloat(total_minutes),
+      tardines_total_days: parseFloat(total_days),
+      taxable_income: parseFloat(totalAmount),
+      total_net_pay: parseFloat(totalNetPay)
+    })
+  }
 
   const handleDelete = () => {
     
@@ -263,6 +475,7 @@ function ShowUser() {
  
 
   useEffect(()=>{
+  getListOfPayroll()
    setloader(true);
     Promise.all([getDataList('position'), getDataList('department'), getDataList('employee')])
       .then((dt) => {
@@ -423,15 +636,15 @@ function ShowUser() {
       )}
       {!loader && (
   <div className="bg-white shadow rounded-lg p-4 sm:p-6 xl:p-8 m-5">
-  <h2 className="card-title font-bold">EMPLOYEE INFORMTION SHEET</h2>
+  <h2 className="card-title font-bold ">EMPLOYEE INFORMTION SHEET</h2>
   <div className='flex items-center gap-5 mt-9 max-md:flex-col'>
   <div className="avatar ">
-      <div className="w-24 rounded-full ring ring-[#0984e3] ring-offset-base-100 ring-offset-2">
+      <div className="w-24 rounded-sm shadow">
         <img src={empData.employee_image ? typeof empData.employee_image === "object" ? URL.createObjectURL(empData.employee_image) : empData.employee_image  : "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"} />
       </div>
   </div>
   <div className="flex-shrink-0 flex gap-3 flex-col" >
-      <input type="file" className=" file-input file-input-md w-full max-w-xs file-input-primary opacity-70  file:text-white text-gray-400"  onChange={(e)=>{
+      <input type="file" className=" file-input file-input-sm w-full max-w-xs file-input-primary opacity-70  file:text-white text-gray-400"  onChange={(e)=>{
               const file = e.target.files[0]; 
                const reader = new FileReader();
                reader.onload = () => {
@@ -439,28 +652,60 @@ function ShowUser() {
                };
                reader.readAsDataURL(file);
          }} />
-
-           <div className={`badge ${empData?.employee_status === "Active" ? "badge-success": "badge-error"} font-semibold text-sm text-white max-md:w-full max-md:p-3`}>{empData?.employee_status || ""}</div>
+        <button type='button' className="btn btn-success text-white btn-sm text-[12px]" onClick={()=>{
+          document.getElementById('employee_payroll').showModal();
+          
+          getListOfPayroll();
+        }}>
+          {_roll_id ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+            <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
+            <path d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
+          </svg>
+          
+          ): (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+          <path fillRule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+        </svg>
+        
+          )}
+          {_roll_id ? "VIEW EMPLOYEE RATE DETAILS": "ADD EMPLOYEE RATE"}
+        </button>
+         
     </div>
   
   </div>
-  <div className='flex gap-5 mt-5 max-md:flex-col'>
-    <label className="form-control w-full  mt-2 ">
+  {_roll_id && (
+  <div className='mt-5'>
+    <div className='flex items-center gap-2'>
+    <h2 className="card-title text-sm">Bank Name:</h2>
+    <p className=' text-blue-500 font-semibold'>{payload.bank_name && payload.bank_name}</p>
+    </div>
+    <div className='flex items-center gap-2'>
+    <h2 className="card-title text-sm">Account Number:</h2>
+    <p className=' text-red-500 font-semibold'>{payload.account_number && payload.account_number
+}</p>
+    </div>
+  </div>
+  )}
+  <div className="divider"></div> 
+  <div className='flex gap-5 mt-2 max-md:flex-col'>
+    <label className={`form-control w-full ${_roll_id ? "": "mt-5"}`}>
         <div className="label">
-          <span className="label-text">Position:</span>
+          <span className="label-text font-semibold">Position:</span>
         </div>
         <label className="form-control w-full">
          <select value={empData.position_id} className="select select-bordered" onChange={(e)=> setEmpData({...empData, position_id: e.target.value})}>
-            <option disabled defaultValue>Select here</option>
-            {empData.employee_position && empData.employee_position.map((pos)=>{
+            <option disabled defaultValue>CHOOSE HERE...</option>
+            {empData.employee_position?.length ? empData.employee_position.map((pos)=>{
                return <option key={pos.position_id} value={pos.position_id}>{pos.position}</option>
-            })}
+            }):  <option disabled defaultValue>POSITION LIST IS EMPTY</option>}
          </select>
       </label>  
     </label>
     <label className="form-control w-full ">
         <div className="label">
-          <span className="label-text">Date Hired:</span>
+          <span className="label-text font-semibold">Date Hired:</span>
         </div>
         <DatePicker  className="input input-bordered mt-2 flex items-center gap-2 w-full"  selected={startDate}  onChange={(date) => setStartDate(date)} />
     </label>
@@ -469,15 +714,15 @@ function ShowUser() {
   <div className='flex gap-5 max-md:flex-col'>
     <label className="form-control w-full  mt-2 ">
         <div className="label">
-          <span className="label-text">Email Address:</span>
+          <span className="label-text font-semibold">Email address:</span>
         </div>
-        <input type="email" autoComplete='none' disabled={!empData.employee_email } value={empData.employee_email} placeholder="i.g email" className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_email: e.target.value})} />   
+        <input type="email" autoComplete='none' disabled={!empData.employee_email } value={empData.employee_email || ""} placeholder="Type here..." className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_email: e.target.value})} />   
     </label>
     <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">SSS #:</span>
+        <span className="label-text font-semibold">SSS no:</span>
       </div>
-      <input type="number" value={empData.employee_sss} placeholder="i.g sss" className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_sss: e.target.value})} />   
+      <input type="number" value={empData.employee_sss} placeholder="Type here..." className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_sss: e.target.value})} />   
     </label>
 
   </div>
@@ -485,22 +730,22 @@ function ShowUser() {
    <div className='flex gap-5 max-md:flex-col'>
   <label className="form-control w-full mt-2">
       <div className="label">
-        <span className="label-text">PhilHealth #:</span>
+        <span className="label-text font-semibold">PhilHealth no:</span>
       </div>
-      <input type="number" value={empData.employee_philhealth} placeholder="i.g philhealth" className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_philhealth: e.target.value})}/>   
+      <input type="number" value={empData.employee_philhealth} placeholder="Type here..." className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_philhealth: e.target.value})}/>   
   </label>
 
   <label className="form-control w-full mt-2">
       <div className="label">
-        <span className="label-text">TIN #:</span>
+        <span className="label-text font-semibold">TIN no:</span>
       </div>
-      <input type="number" value={empData.employee_tin} placeholder="i.g tin" className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_tin: e.target.value})} />   
+      <input type="number" value={empData.employee_tin} placeholder="Type here..." className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_tin: e.target.value})} />   
   </label>
   <label className="form-control w-full mt-2">
       <div className="label">
-        <span className="label-text">Pag-ibig #:</span>
+        <span className="label-text font-semibold">Pag-ibig no:</span>
       </div>
-      <input type="number" value={empData.employee_pag_ibig } placeholder="i.g pag-ibig" className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_pag_ibig: e.target.value})} />   
+      <input type="number" value={empData.employee_pag_ibig } placeholder="Type here..." className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_pag_ibig: e.target.value})} />   
   </label>
   </div> 
 
@@ -510,19 +755,19 @@ function ShowUser() {
   <div>
   <label className="form-control w-full mt-2">
       <div className="label">
-        <span className="label-text">Employee ID:</span>
+        <span className="label-text font-semibold">Employee ID:</span>
       </div>
-      <input type="text" value={empData.employee_id || ""} placeholder="i.g employee_id" className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_id: e.target.value})} />   
+      <input type="text" value={empData.employee_id || ""} placeholder="Type here..." className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_id: e.target.value})} />   
   </label>
   <label className="form-control w-full mt-2">
       <div className="label">
-        <span className="label-text">Name:</span>
+        <span className="label-text font-semibold">Name:</span>
       </div>
-      <input type="text" value={empData.employee_name || ""} placeholder="i.g fullname" className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_name: e.target.value})} />   
+      <input type="text" value={empData.employee_name || ""} placeholder="Type here..." className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_name: e.target.value})} />   
   </label>
   <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Employee role</span>
+        <span className="label-text font-semibold">Employee role</span>
       </div>
       <select value={empData.employee_role || ""} className="select select-bordered" onChange={(e)=> setEmpData({...empData, employee_role:e.target.value})}>
                   <option  defaultValue>Select here</option>
@@ -535,27 +780,27 @@ function ShowUser() {
   </label>
   <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Department</span>
+        <span className="label-text font-semibold">Department</span>
       </div>
       <select value={empData.department_id} className="select select-bordered" onChange={(e)=> setEmpData({...empData, department_id: e.target.value})}>
-            <option disabled defaultValue>Select here</option>
-            {empData.employee_department && empData.employee_department.map((de)=>{
+            <option disabled defaultValue>CHOOSE HERE</option>
+            {empData.employee_department?.length ? empData.employee_department.map((de)=>{
                return <option key={de.id} value={de.id}>{de.department} ({de.total_employees})</option>
-            })}
+            }):  <option disabled defaultValue>DEPARTMENT LIST IS EMPTY</option> }
          </select>  
   </label>
   <label className="form-control w-full mt-2">
       <div className="label">
-        <span className="label-text">Current Address:</span>
+        <span className="label-text font-semibold">Current Address:</span>
       </div>
-      <input value={empData.employee_address} type="text" placeholder="i.g address" className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_address: e.target.value})} />   
+      <input value={empData.employee_address} type="text" placeholder="Type here..." className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_address: e.target.value})} />   
   </label>
 
   <label className="form-control w-full mt-2">
       <div className="label">
-        <span className="label-text">Provincial Address:</span>
+        <span className="label-text font-semibold">Provincial Address:</span>
       </div>
-      <input type="text" value={empData.employee_provincial_address}  placeholder="i.g address" className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_provincial_address: e.target.value})}/>   
+      <input type="text" value={empData.employee_provincial_address}  placeholder="Type here..." className="input input-bordered w-full " onChange={(e)=> setEmpData({...empData, employee_provincial_address: e.target.value})}/>   
   </label>
  
  
@@ -564,28 +809,28 @@ function ShowUser() {
   <div className='flex gap-5'>
     <label className="form-control w-full mt-2">
         <div className="label">
-          <span className="label-text">Birth Date:</span>
+          <span className="label-text font-semibold">Birth Date:</span>
         </div>
-        <DatePicker  className="input input-bordered flex items-center gap-2 w-full"  selected={empData?.employee_birthdate}  onChange={(date)=> setEmpData({...empData, employee_birthdate:date}) } />
+        <DatePicker  className="input input-bordered flex items-center gap-2 w-full" placeholderText='Select Date here...'  selected={empData?.employee_birthdate}  onChange={(date)=> setEmpData({...empData, employee_birthdate:date}) } />
     </label>
     <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Birth Place:</span>
+        <span className="label-text font-semibold">Birth Place:</span>
       </div>
-      <input type="text" value={empData.employee_birth_place}  placeholder="i.g birthplace" className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_birth_place:e.target.value})} />   
+      <input type="text" value={empData.employee_birth_place}  placeholder="Type here..." className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_birth_place:e.target.value})} />   
   </label>
   </div>
 
   <div className='flex gap-5 max-md:flex-col'>
     <label className="form-control w-full mt-2">
         <div className="label">
-          <span className="label-text">Age</span>
+          <span className="label-text font-semibold">Age</span>
         </div>
-        <input type="text" value={empData.employee_age || ""}  placeholder="i.g age" className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_age:e.target.value})} /> 
+        <input type="text" value={empData.employee_age || ""}  placeholder="Type here..." className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_age:e.target.value})} /> 
     </label>
     <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Sex</span>
+        <span className="label-text font-semibold">Sex</span>
       </div>
       <select value={empData.employee_gender || ""} className="select select-bordered" onChange={(e)=> setEmpData({...empData, employee_gender:e.target.value})}>
                   <option  defaultValue>Select here</option>
@@ -595,22 +840,22 @@ function ShowUser() {
   </label>
   <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Weight</span>
+        <span className="label-text font-semibold">Weight</span>
       </div>
-      <input type="number" value={empData.employee_weight || ""}  placeholder="i.g weight" className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_weight:e.target.value})} />   
+      <input type="number" value={empData.employee_weight || ""}  placeholder="Type here..." className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_weight:e.target.value})} />   
   </label>
   <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Height</span>
+        <span className="label-text font-semibold">Height</span>
       </div>
-      <input type="number" value={empData.employee_height || ""}  placeholder="i.g height" className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_height:e.target.value})} />   
+      <input type="number" value={empData.employee_height || ""}  placeholder="Type here..." className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_height:e.target.value})} />   
   </label>
   </div>
 
   <div className='flex gap-5 mt-2 max-md:flex-col'>
       <label className="form-control w-full">
         <div className="label">
-          <span className="label-text">Civil Status:</span>
+          <span className="label-text font-semibold">Civil Status:</span>
         </div>
 
         <div className='flex gap-2 items-center '>
@@ -643,7 +888,7 @@ function ShowUser() {
     </label>
     <label className="form-control w-full mt-2">
           <div className="label">
-            <span className="label-text">Spouse Employed:</span>
+            <span className="label-text font-semibold">Spouse Employed:</span>
           </div>
           <div className='flex gap-2 items-center'>
             <span className="label-text">Yes</span>
@@ -665,15 +910,15 @@ function ShowUser() {
   <div className='flex gap-5'>
     <label className="form-control w-full mt-2">
         <div className="label">
-          <span className="label-text">Name of Spouse:</span>
+          <span className="label-text font-semibold">Name of Spouse:</span>
         </div>
-        <input type="text" value={empData.employee_name_of_spouse} placeholder="i.g spouse" autoComplete='false' className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_name_of_spouse: e.target.value}) } />   
+        <input type="text" value={empData.employee_name_of_spouse} placeholder="Type here..." autoComplete='false' className="input input-bordered w-full" onChange={(e) => setEmpData({...empData, employee_name_of_spouse: e.target.value}) } />   
     </label>
     <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Date of Birth:</span>
+        <span className="label-text font-semibold">Date of Birth:</span>
       </div>
-      <DatePicker  className="input input-bordered flex items-center gap-2 w-full" selected={empData.employee_date_birth}  onChange={(date)=> setEmpData({...empData, employee_date_birth:date}) }  />
+      <DatePicker  className="input input-bordered flex items-center gap-2 w-full"  placeholderText='Select Date here...' selected={empData.employee_date_birth}  onChange={(date)=> setEmpData({...empData, employee_date_birth:date}) }  />
   
   </label>
   </div>
@@ -682,24 +927,24 @@ function ShowUser() {
   
     <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Name of Company:</span>
+        <span className="label-text font-semibold">Name of Company:</span>
       </div>
-      <input type="text" value={empData.employee_company} placeholder="i.g company" className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_company: e.target.value}) } />   
+      <input type="text" value={empData.employee_company} placeholder="Type here..." className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_company: e.target.value}) } />   
   </label>
   </div>
 
   <div className='flex gap-5'>
     <label className="form-control w-full mt-2">
         <div className="label">
-          <span className="label-text">Father's Name:</span>
+          <span className="label-text font-semibold">Father's Name:</span>
         </div>
-        <input value={empData.employee_father} type="text" placeholder="i.g father" className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_father: e.target.value})} />   
+        <input value={empData.employee_father} type="text" placeholder="Type here..." className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_father: e.target.value})} />   
     </label>
     <label className="form-control w-full  mt-2">
       <div className="label">
-        <span className="label-text">Mother's Name:</span>
+        <span className="label-text font-semibold">Mother's Name:</span>
       </div>
-      <input type="text" value={empData.employee_mother} placeholder="ig. mother" className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_mother: e.target.value})}/>   
+      <input type="text" value={empData.employee_mother} placeholder="Type here..." className="input input-bordered w-full" onChange={(e)=> setEmpData({...empData, employee_mother: e.target.value})}/>   
   </label>
   </div>
 
@@ -780,16 +1025,16 @@ function ShowUser() {
     <thead>
       <tr>
         <th className='tracking-wider'></th>
-        <th className='tracking-wider'>School</th>
-        <th className='tracking-wider'>Years Attended</th>
-        <th className='tracking-wider'>Degree</th>
+        <th className='tracking-wider '>School</th>
+        <th className='tracking-wider '>Years Attended</th>
+        <th className='tracking-wider '>Degree</th>
       </tr>
     </thead>
     <tbody>
       {empData.employee_educational_background && empData.employee_educational_background.map((ed , i)=>{
         return (
           <tr key={i}>
-          <td className='whitespace-nowrap'>
+          <td className='whitespace-nowrap font-semibold'>
             {ed.type}
           </td>
           <td className='whitespace-nowrap'><input value={ed.school} type="text" placeholder="Type here" className="input-md input w-full " onChange={(e)=>{
@@ -966,7 +1211,7 @@ function ShowUser() {
     <tbody>
 
       <tr>
-        <td className="w-[10%]">Name:</td>
+        <td className="w-[10%] font-semibold">Name:</td>
         <td className='whitespace-nowrap'><input type="text" value={empData.employee_case_emergency?.name || ""} placeholder="Type here" className="input-md input w-full " onChange={(e)=>{
           setEmpData({
             ...empData, 
@@ -976,7 +1221,7 @@ function ShowUser() {
             }
           })
         }} /></td>
-        <td className="w-[10%]">Relationship:</td>
+        <td className="w-[10%] font-semibold">Relationship:</td>
         <td className='whitespace-nowrap'><input type="text" value={empData.employee_case_emergency?.relationship || ""} placeholder="Type here" className="input-md input w-full " onChange={(e)=> {
           setEmpData({
             ...empData,
@@ -989,7 +1234,7 @@ function ShowUser() {
       </tr>
 
       <tr>
-        <td className="w-[10%]">Address:</td>
+        <td className="w-[10%] font-semibold">Address:</td>
         <td className='whitespace-nowrap'><input  type="text" placeholder="Type here" value={empData.employee_case_emergency?.address || ""} className="input-md input w-full " onChange={(e)=>{
           setEmpData({
             ...empData, 
@@ -999,7 +1244,7 @@ function ShowUser() {
             }
           })
         }}/></td>
-        <td className="w-[10%]">Contact Number:</td>
+        <td className="w-[10%] font-semibold">Contact Number:</td>
         <td className='whitespace-nowrap'><input  type="text" placeholder="Type here" value={empData.employee_case_emergency?.contact || ""} className="input-md input w-full " onChange={(e)=>{
           setEmpData({
             ...empData, 
@@ -1012,6 +1257,9 @@ function ShowUser() {
       </tr>
     </tbody>
   </table>
+
+
+ 
 
   <label className="form-control mt-2">
   <div className="label">
@@ -1046,6 +1294,151 @@ function ShowUser() {
       )}
     
     </div> 
+
+
+    <dialog id="employee_payroll" className="modal">
+        <div className="modal-box w-11/12 max-w-5xl">
+        <div className='flex justify-between'>
+          <div className='w-full'>
+          <h3 className="font-bold text-lg mt-5">EMPLOYEE RATE</h3>
+          <span className="label-text opacity-60 text-[12px] font-semibold">Input all the fields below.</span>
+          </div>
+          <div className='w-full max-w-xs'>
+          <label className="form-control w-full max-w-xs">
+            <div className="label">
+              <span className="label-text font-semibold opacity-70">Date of Review w/ Adjustments</span>
+            </div>
+            <input type="date" placeholder="Type here" value={payload.review_adjustments} name="review_adjustments" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  className="input input-bordered w-full max-w-xs font-bold" />
+        </label>
+        <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['rates_review_adjustments']}</p>
+          </div>
+       
+        </div>
+         
+          <form  method="dialog" onSubmit={handleSubmitPayroll} autoComplete="off">
+           
+           <div className="divider"></div> 
+           <div className='flex w-full flex-col gap-4'>
+         
+            <div className="overflow-x-auto">
+            <div className="flex-shrink-0 flex items-center gap-3 ml-2 " >
+              <span className='font-bold opacity-70 text-red-500'>Bank Details:</span>             
+            </div> 
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Account Numbers</th>
+                    <th>Account Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input type="text" value={payload?.account_number || ""} name="account_number" placeholder="Type here" className="input font-semibold input-bordered w-full" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="text" value={payload?.bank_name || ""} name="bank_name" placeholder="Type here" className="input font-semibold input-bordered w-full" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+
+            <div className="overflow-x-auto">
+              <table className="table">
+                {/* head */}
+                <thead>
+                  <tr>
+                    <th>Basic Salary</th>
+                    <th>Night Diff</th>
+                    <th>Allowance</th>
+                  </tr>
+                </thead>
+                <tbody>
+             
+                  <tr >
+                    <td><input type="number" min={0} step="0.01" value={payload?.basic_salary || ""} onKeyUp={calculateData}  name='basic_salary' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" min={0} step="0.01"  value={payload?.basic_night_diff || ""} onKeyUp={calculateData} name='basic_night_diff' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  /></td>
+                    <td><input type="number" min={0} step="0.01"   value={payload?.basic_allowance || ""} onKeyUp={calculateData} name='basic_allowance' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                  </tr>
+                 
+                </tbody>
+              </table>
+            </div>
+
+    
+            <div className='w-full'>
+            <div className="flex-shrink-0 flex items-center gap-3 ml-2" >
+              <span className='font-bold opacity-70 text-red-500'>EARNINGS:</span>             
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="table">
+                {/* head */}
+                <thead>
+                  <tr>
+                    <th>Bi-Monthly</th>
+                    <th>Night Diff</th>
+                    <th>Allowance</th>
+                    <th>Daily</th>
+                  </tr>
+                </thead>
+                <tbody>
+             
+                  <tr >
+                    <td><input type="number" disabled min={0} step="0.01"  value={payload?.bi_montly || ""} name='bi_montly' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculateSlip} /></td>
+                    <td><input type="number" min={0} step="0.01" disabled   value={payload?.night_diff || ""} name='night_diff' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" min={0} step="0.01" disabled value={payload?.allowance || ""} onKeyUp={calculateSlip}  name='allowance' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" min={0} step="0.01" disabled value={payload?.daily ? payload.daily?.toFixed(2) : "0.00"} onKeyUp={calculateSlip}  name='daily' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="table">
+                {/* head */}
+                <thead>
+                  <tr>
+                    <th>Hourly</th>
+                    <th>13th month</th>
+                    <th>2.1%</th>
+                  </tr>
+                </thead>
+                <tbody>
+             
+                  <tr>
+                    <td><input type="number" disabled min="0" step="0.01" onKeyUp={calculateSlip} value={payload?.hourly ? payload.hourly?.toFixed(2) : "0.00"} name='hourly' placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number"  min="0" step="0.01" onKeyUp={calculateSlip} value={payload?.thirteenth_pay || ""} name='thirteenth_pay' placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" disabled min="0" step="0.01" onKeyUp={calculateSlip} value={payload?.hourly_rate ? payload.hourly_rate.toFixed(2) : "0.00"} name='hourly_rate' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs"  /></td>
+                  </tr>
+                 
+                </tbody>
+              </table>
+            </div>
+            </div>
+           </div>
+
+           <label className="input  flex items-center gap-2">
+                  <span className='font-bold opacity-70 uppercase'>Total Monthly:</span> 
+                  <input min={0} value={payload.total_montly ? payload.total_montly.toFixed(2) : "0.00"} type="number" disabled className="grow font-semibold text-blue-500" placeholder=""  />
+              </label>
+
+
+   
+            <p  className="text-red text-xs italic text-red-500 ml-2 error-message"></p>
+            <div className="modal-action">
+                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]">
+                 {_roll_id ? "UPDATE" : "SUBMIT"}
+                   </button>
+                <button type='button' className="btn btn-error text-white shadow" onClick={()=>{
+                   getListOfPayroll()
+                   document.getElementById('employee_payroll').close();
+                }}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            </form>
+       
+        </div>
+      </dialog>
 
     
     </>

@@ -11,6 +11,7 @@ function Dashboard() {
 
     const [empRole, setRole] = useState("");
     const [loadingButton, setLoadingButton] = useState(false);
+    const [error, setError] = useState(null);
     const [userData, setUserData] = useState({
         employee_id: "",
         employee_image: "",
@@ -105,7 +106,9 @@ function Dashboard() {
 
   
        if(!check.length){
-    
+
+       
+   
             axiosClient.post("/employee", {
                     employee_id: userData.employee_id,
                     employee_name: userData.employee_name,
@@ -129,9 +132,17 @@ function Dashboard() {
                   window.location.href = "/dashboard"
 
             
-            }).catch((er)=>{
-                console.log(er);
             })
+            .catch((err)=>{
+                setLoadSubmit(false)
+                const {response} = err;
+                if(response &&  response.status  === 422){
+                 setError(response.data.errors)
+                 setTimeout(() => {
+                   setError(null)
+                 }, 2000);
+                }
+             })
 
        }else{
         
@@ -196,6 +207,7 @@ function Dashboard() {
         
         }else{
             setLoadSubmit(false)
+
             document.getElementById('my_modal_5').close();
             if(!userData.employee_id){
                 swal({
@@ -335,15 +347,10 @@ function Dashboard() {
             return (
                 <>
                 <div className="ml-auto mb-6 lg:w-[75%] xl:w-[80%] 2xl:w-[85%]">
-                    <div className="bg-white shadow rounded-lg p-4 sm:p-6 xl:p-8 m-5">
-           
-                        <div className="hero min-h-screen bg-base-200">
-     
-        
+                    <div className=" shadow rounded-md p-4 sm:p-6 xl:p-8 m-5">
+                        <div className="hero ">
                             <div className="hero-content text-center max-md:text-start">
                                 <div>
-                               
-
                                     <h1 className="text-5xl font-bold max-md:text-2xl">Hi there, Welcome to Workwise<span className="text-[#00b894]">HR.</span></h1>
                                         <p className="py-6 opacity-70 font-medium max-md:text-sm">Ooopps, looks like you don't have a position yet. <br></br> Please use your <span className="font-bold text-red-500">EMPLOYEE ID</span> to become an employee.</p> 
 
@@ -384,7 +391,7 @@ function Dashboard() {
                 <div className="flex justify-between">
                 <div>
                 <h3 className="font-bold text-lg ">New Employee</h3>
-                <span className="label-text opacity-70 ">Input all the fields below</span>
+                <span className="label-text opacity-70 ">Input all the fields below.</span>
                 </div>
                 <button type='button' className="btn shadow"  onClick={()=>  document.getElementById('my_modal_5').close()} >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -394,12 +401,12 @@ function Dashboard() {
                 <div className="avatar mt-5 w-full flex-col flex justify-center items-center gap-3">
                 </div>
                 <label className="input input-bordered mt-2 flex items-center gap-2">
-                  Employee ID
-                   <input value={userData.employee_id || ""}   type="text" className="grow" placeholder="i.g xxxxxxxxx" onChange={(e)=> setUserData({...userData, employee_id: e.target.value })} />
+                  Employee ID:
+                   <input value={userData.employee_id || ""}   type="text" className="grow font-semibold" placeholder="Type here..." onChange={(e)=> setUserData({...userData, employee_id: e.target.value })} />
                 </label>
                 <label className="input input-bordered mt-2 flex items-center gap-2">
-                   Email
-                   <input value={userData.employee_email || ""} type="email" className="grow opacity-70 cursor-not-allowed" placeholder="i.g email" disabled  onChange={(e)=> setUserData({...userData, employee_email: e.target.value })} />
+                   Email:
+                   <input value={userData.employee_email || ""} type="email" className="grow font-semibold opacity-70 cursor-not-allowed" placeholder="i.g email" disabled  onChange={(e)=> setUserData({...userData, employee_email: e.target.value })} />
                 </label>
              
                 <div className="modal-action">
@@ -423,8 +430,8 @@ function Dashboard() {
         default:
             return (
                 <div className="ml-auto mb-6 lg:w-[75%] xl:w-[80%] 2xl:w-[85%]">
-                    <div className="bg-white shadow rounded-lg p-4 sm:p-6 xl:p-8 m-5">
-                        <div className="hero min-h-screen bg-base-200">
+                    <div className=" sm:p-6 xl:p-8 m-5 flex justify-center shadow rounded-md">
+                        <div className="hero ">
                             <div className="hero-content text-center max-md:text-start">
                                 <div>
                                     <h1 className="text-5xl font-bold max-md:text-2xl">Hi there, Welcome to Workwise<span className="text-[#00b894] max-md:text-2xl">HR.</span></h1>
@@ -453,69 +460,72 @@ function Dashboard() {
                                           <span className="loading loading-spinner loading-sm"></span>
                                             Please wait...
                                         </>
-                                    ): "Set Account"}
+                                    ): "SET ACCOUNT"}
                                     </button>
                                 </div>
                             </div>
                         </div>   
                     </div>
                     <dialog id="my_modal_5" className="modal  sm:modal-middle ">
-            <div className="modal-box ">
-                <div className="flex justify-between">
-                <div>
-                <h3 className="font-bold text-lg">New Employee</h3>
-                <span className="label-text opacity-70 ">Input all the fields below</span>
-                </div>
-                <button type='button' className="btn shadow"  onClick={()=>  document.getElementById('my_modal_5').close()} >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <form onSubmit={handleSetAccount}  method="dialog">
-                <div className="avatar mt-5 w-full flex-col flex justify-center items-center gap-3">
-                </div>
-                <label className="input input-bordered mt-2 flex items-center gap-2">
-                  Employee ID
-                   <input value={userData.employee_id || ""}   type="text" className="grow" placeholder="i.g *******" onChange={(e)=> setUserData({...userData, employee_id: e.target.value })} />
-                </label>
-                <label className="input input-bordered mt-2 flex items-center gap-2">
-                  Full name
-                   <input value={userData.employee_name || ""}  type="text" className="grow opacity-70 cursor-not-allowed" placeholder="i.g marcus" disabled   onChange={(e)=> setUserData({...userData, employee_name:  e.target.value})}  />
-                </label>
-                <label className="input input-bordered mt-2 flex items-center gap-2">
-                   Email
-                   <input value={userData.employee_email || ""} type="email" className="grow opacity-70 cursor-not-allowed" placeholder="i.g email" disabled  onChange={(e)=> setUserData({...userData, employee_email: e.target.value })} />
-                </label>
-                <label className="input input-bordered mt-2 flex items-center gap-2 mb-4">
-                   Start-date:
-                   <DatePicker className="grow"  selected={userData.employee_start_date}  onChange={(date) => setUserData({...userData, employee_start_date:date})} />
-                </label>
-            
-    
-                <label className="form-control w-full mt-2">
-                   <div className="label">
-                      <span className="label-text">Role</span>
-                   </div>
-                   <select value={userData.employee_role} className="select select-bordered" onChange={(e)=> setUserData({...userData, employee_role: e.target.value})} >
-                      <option  defaultValue>Select here</option>
-                      <option value="HR">HR</option>
-                      <option value="ADMIN">ADMIN</option>
-                   </select>
-                </label>
-               
-                <div className="modal-action">
-                    <button type='submit'  className="btn btn-success text-white w-[100%]">
-                    {loadSubmit ? (
-                                        <>
-                                          <span className="loading loading-spinner loading-sm"></span>
-                                            Please wait...
-                                        </>
-                    ): " Set account as HR"}
-                       
-                    </button>
-                </div>
-                </form>
-            </div>
-        </dialog>
+                        <div className="modal-box ">
+                            <div className="flex justify-between">
+                            <div>
+                            <h3 className="font-bold text-lg">New Employee</h3>
+                            <span className="label-text opacity-70 ">Input all the fields below</span>
+                            </div>
+                            <button type='button' className="btn shadow"  onClick={()=>  document.getElementById('my_modal_5').close()} >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div> 
+                            <form onSubmit={handleSetAccount}  method="dialog">
+                            <p className="text-[10px] leading-normal mt-4 mb-3 text-red-500 font-semibold italic">
+                            * Note: You are the first user of this application, so you are the HR/Administrator. Please input your company ID to proceed.
+                            </p>
+                            <label className="input input-bordered mt-2 flex items-center gap-2">
+                            Employee ID:
+                            <input value={userData.employee_id || ""}   type="text" className="grow font-semibold" placeholder="Type here..." onChange={(e)=> setUserData({...userData, employee_id: e.target.value })} />
+                            </label>
+                            <p  className="text-red text-xs italic mt-2  text-red-500 ml-2 error-message">{error && error['employee_id']}</p>
+                            <label className="input input-bordered mt-2 flex items-center gap-2">
+                            Full name:
+                            <input value={userData.employee_name || ""}  type="text" className="grow font-semibold opacity-70 cursor-not-allowed" placeholder="i.g marcus" disabled   onChange={(e)=> setUserData({...userData, employee_name:  e.target.value})}  />
+                            </label>
+                            <label className="input input-bordered mt-2 flex items-center gap-2">
+                            Email:
+                            <input value={userData.employee_email || ""} type="email" className="grow font-semibold opacity-70 cursor-not-allowed" placeholder="i.g email" disabled  onChange={(e)=> setUserData({...userData, employee_email: e.target.value })} />
+                            </label>
+                            <label className="input input-bordered mt-2 flex items-center gap-2 mb-4">
+                            Start-date:
+                            <DatePicker className="grow font-semibold"  selected={userData.employee_start_date}  onChange={(date) => setUserData({...userData, employee_start_date:date})} />
+                            </label>
+                        
+                
+                            <label className="form-control w-full mt-2">
+                            <div className="label">
+                                <span className="label-text">Role</span>
+                            </div>
+                            <select value={userData.employee_role} className="select select-bordered font-semibold" onChange={(e)=> setUserData({...userData, employee_role: e.target.value.trim() === "Choose here" ? null : e.target.value})} >
+                                <option >Choose here</option>
+                                <option value="HR" className="font-semibold">HR</option>
+                                <option value="ADMIN" className="font-semibold">ADMIN</option>
+                            </select>
+                            </label>
+                            <p  className="text-red text-xs italic mt-2  text-red-500 ml-2 error-message">{error && error['employee_role']}</p>
+                        
+                            <div className="modal-action">
+                                <button type='submit'  className="btn btn-success text-white w-[100%]">
+                                {loadSubmit ? (
+                                                    <>
+                                                    <span className="loading loading-spinner loading-sm"></span>
+                                                        Please wait...
+                                                    </>
+                                ): " Set account as HR / ADMIN"}
+                                
+                                </button>
+                            </div>
+                            </form>
+                        </div>
+                    </dialog>
                 </div> 
             )
            

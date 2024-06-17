@@ -2,11 +2,9 @@ import { useEffect,useState } from 'react';
 import axiosClient from '../axiosClient';
 import moment from 'moment';
 import swal from 'sweetalert';
-import { Link } from 'react-router-dom';
-
+import { Link } from 'react-router-dom'
 
 function Compensation() {
-
 
   const [employees, setEmployees] = useState([]);
   const [payload, setPayload] = useState({});
@@ -18,11 +16,19 @@ function Compensation() {
   const [pay_id, setPay_id] = useState("");
   const [_id, set_Id] = useState("");
   const [_roll_id, setRoll_id] = useState("");
- 
+  const [error, setError] = useState(null);
+  const [loadPage, setLoadPage] = useState(false);
+  const [modalLoad, setModalLoad] = useState(false);
+
+
+  useEffect(() => {
+    calculateDateRange();
+  }, []);
+
 
   useEffect(()=>{
     getListOfEmployee();
-    getListOfPayroll();
+    getAllRates();
  },[])
 
  const getListOfEmployee = () => {
@@ -35,96 +41,6 @@ function Compensation() {
     });
  }
 
-
-
-
- const handleSubmitPayload = (e) => {
-  e.preventDefault();
-
-
-  if(_id){
-   
-    axiosClient.put(`/payslip/${_id}?${new URLSearchParams(payload).toString()}`)
-    .then((res)=>{
-      setPayload({});
-      document.getElementById('employee_payslip_details').close();
-      getListOfPayroll();
-      swal({
-        title: "Good job!",
-        text: res.data.message,
-        icon: "success",
-        button: "Okay!",
-      });
-    })
-    .catch((err)=>{
-     
-       const {response} = err;
-       if(response &&  response.status  === 422){
-       console.log(response)
-       }
-    })
-    return;
- }
-
-
- 
- 
-  axiosClient.post('/payslip', payload )
-  .then((res)=>{
-    getListOfPayroll();
-    setPayload({});
-    setEmployees([]);
-    document.getElementById('employee_payslip').close();
-    swal({
-      title: "Good job!",
-      text: res.data.message,
-      icon: "success",
-      button: "Okay!",
-    });
-    
-  })
- .catch((err)=>{
-   
-    const {response} = err;
-    if(response &&  response.status  === 422){
-       console.log(response)
-    }
- })
- }
-
- const calculatePaySlip = () => {
-  const earnings_per_month = parseFloat(payload?.earnings_per_month) || 0;
-  const earnings_allowance = parseFloat(payload?.earnings_allowance) || 0;
-  const earnings_night_diff = parseFloat(payload?.earnings_night_diff) || 0;
-  const earnings_holiday = parseFloat(payload?.earnings_holiday) || 0;
-  const earnings_retro = parseFloat(payload?.earnings_retro) || 0;
-  const earnings_commission = parseFloat(payload?.earnings_commission) || 0;
-
-
-  const deductions_lwop = parseFloat(payload?.deductions_lwop) || 0;
-  const deductions_holding_tax = parseFloat(payload?.deductions_holding_tax) || 0;
-  const deductions_sss_contribution = parseFloat(payload?.deductions_sss_contribution) || 0;
-  const deductions_phic_contribution = parseFloat(payload?.deductions_phic_contribution) || 0;
-  const deductions_hmo = parseFloat(payload?.deductions_hmo) || 0;
-  const deductions_sss_loan = parseFloat(payload?.deductions_sss_loan) || 0;
-  const deductions_hmo_loan = parseFloat(payload?.deductions_hmo_loan) || 0;
-  const deductions_employee_loan = parseFloat(payload?.deductions_employee_loan) || 0;
-  const deductions_others = parseFloat(payload?.deductions_others) || 0;
-  const deductions_hdmf_contribution = parseFloat(payload?.deductions_hdmf_contribution) || 0;
-
-
- 
-  
-  const totalEarn = earnings_per_month + earnings_allowance + earnings_night_diff + earnings_holiday + earnings_retro + earnings_commission; 
-  const totalDeduc = deductions_lwop + deductions_holding_tax + deductions_sss_contribution + deductions_phic_contribution + deductions_hmo + deductions_sss_loan + deductions_hmo_loan + deductions_employee_loan + deductions_hdmf_contribution + deductions_others; 
-  const totalNetPay = parseFloat(totalEarn) - parseFloat(totalDeduc);
-
-  setPayload({...payload, 
-    earnings_total: parseFloat(totalEarn), 
-    deductions_total: parseFloat(totalDeduc),
-    payslip_netPay: parseFloat(totalNetPay)
-  });
-};
 
 
 const calculateSlip = () => {
@@ -153,12 +69,8 @@ const calculateSlip = () => {
 
   const total_minutes = per_hour_day / 8 * tardines_minutes;
   const total_days = per_hour_day * tardines_days;
-
-
   const totalAmount = (bi_montly + night_diff + holiday_OT + incentive) - (total_minutes + total_days + sss + phic + hdmf);
-
   const totalNetPay = (parseFloat(totalAmount) + parseFloat(retro_others) + parseFloat(allowance)) - (parseFloat(withholding) + parseFloat(sss_loan) + parseFloat(ar_others))
-
 
   
   setPayload({
@@ -171,56 +83,43 @@ const calculateSlip = () => {
   })
 }
 
-const getListOfPayroll = () => {
-  axiosClient.get("/compensation")
+const getAllRates = () => {
+  setLoadPage(true)
+  axiosClient.get("/rates")
   .then((data)=>{
-  
-   const result = data.data.map(data => {
-      const {comp_per_hour_day, 
-        comp_number_of_mins, 
-        comp_number_of_days,
-        comp_bi_monthly,
-        comp_night_diff,
-        comp_holiday_or_ot,
-        comp_comission,
-        comp_sss,
-        comp_phic,
-        comp_hdmf,
-        comp_retro,
-        comp_allowance,
-        comp_withholding,
-        comp_sss_loan,
-        comp_ar
-      } = data;
+    setLoadPage(false)
+ 
+    const result = data.data.map(data => {
 
-      let totalMinutes = calculateTotalMinutes(comp_per_hour_day, comp_number_of_mins)
-      let totalDays = calculateTotalDays(comp_per_hour_day, comp_number_of_days)
-      let taxable_income = calculateTaxableIncome(
-        comp_bi_monthly,
-        comp_night_diff,
-        comp_holiday_or_ot,
-        comp_comission,
-        totalMinutes,
-        totalDays,
-        comp_sss,
-        comp_phic,
-        comp_hdmf
-      )
-      let totalNetPay = calculateNetpay(
-        taxable_income,
-        comp_retro,
-        comp_allowance,
-        comp_withholding,
-        comp_sss_loan,
-        comp_ar
-      )
+      const { 
+        rates_night_diff,
+        rates_basic_salary,
+        rates_allowance
+      } = data;
+  
+      const total_montly = rates_basic_salary + rates_night_diff + rates_allowance;
+      const bi_montly = rates_basic_salary / 2 
+      const night_diff = rates_night_diff / 2
+      const allowance = rates_allowance / 2 
+      const daily = rates_basic_salary / 21.75
+      const hourly = daily / 8
+      const hourly_rate = (2.1 / 100) * hourly
+
+      
     
       return {
         ...data,
-        taxable_income,
-        totalNetPay,
+        total_montly,
+        bi_montly,
+        night_diff,
+        allowance,
+        hourly_rate,
+        daily,
+        hourly
       }
     })
+
+   
 
    
 
@@ -228,83 +127,52 @@ const getListOfPayroll = () => {
   
 
     const totalAmount = result.reduce((accumulator, currentValue) => {
-      accumulator.allTaxAmmount += currentValue.taxable_income;
-      accumulator.allTaxNetPay += currentValue.totalNetPay;
+      accumulator.allBasicSalary += currentValue.rates_basic_salary;
+      accumulator.allNightDiff += currentValue.rates_night_diff;
+      accumulator.allTotalMonthly += currentValue.total_montly;
+      accumulator.allBiMonthly += currentValue.bi_montly;
       return accumulator;
-    }, { allTaxAmmount: 0, allTaxNetPay: 0 });
+    }, { allBasicSalary: 0, allNightDiff: 0 , allTotalMonthly: 0, allBiMonthly: 0 });
 
     setTotalDataAmount(totalAmount)
     
   })
 }
 
-const calculateTotalMinutes = (per_hour_day, tardines_minutes) => {
-  return per_hour_day / 8 * tardines_minutes
-}
-
-const calculateTotalDays = (per_hour_day, tardines_days) => {
-  return per_hour_day * tardines_days;
-}
-
-const calculateTaxableIncome = (
-  bi_montly,
-  night_diff,
-  holiday_OT,
-  incentive,
-  total_minutes,
-  total_days,
-  sss,
-  phic,
-  hdmf
-) => {
-  return (bi_montly + night_diff + holiday_OT + incentive) - (total_minutes + total_days + sss + phic + hdmf);
-}
-
-const calculateNetpay = (
-  totalAmount,
-  retro_others,
-  allowance,
-  withholding,
-  sss_loan,
-  ar_others
-) => {
-  return (parseFloat(totalAmount) + parseFloat(retro_others) + parseFloat(allowance)) - (parseFloat(withholding) + parseFloat(sss_loan) + parseFloat(ar_others))
-}
 
 const handleSubmitPayroll = (e) => {
   e.preventDefault();
 
   const data = {
     'employee_id': payload.employee_id,
-    'comp_bi_monthly':payload.bi_montly,
-    'comp_per_hour_day': payload.per_hour_day,
-    'comp_night_diff': payload.night_diff,
-    'comp_holiday_or_ot': payload.holiday_OT,
-    'comp_comission': payload.incentive,
-    'comp_number_of_mins': payload.tardines_minutes,
-    'comp_number_of_days': payload.tardines_days,
-    'comp_mins': payload.tardines_total_minutes,
-    'comp_days': payload.tardines_total_days,
-    'comp_sss': payload.sss,
-    'comp_phic': payload.phic,
-    'comp_hdmf': payload.hdmf,
-    'comp_withholding': payload.withholding,
-    'comp_sss_loan': payload.sss_loan,
-    'comp_ar': payload.ar_others,
-    'comp_retro': payload.retro_others,
-    'comp_allowance': payload.allowance,
-    'comp_account_num': payload.account_number,
-    'comp_acount_name': payload.bank_name,
-    'comp_pay_roll_dates': payload.pay_roll_dates
-};
+    'comp_bi_monthly':parseFloat(payload.bi_montly) ||0,
+    'comp_per_hour_day': parseFloat(payload.per_hour_day) ||0,
+    'comp_night_diff': parseFloat(payload.night_diff) ||0,
+    'comp_holiday_or_ot': parseFloat(payload.holiday_OT) ||0,
+    'comp_comission': parseFloat(payload.incentive) ||0,
+    'comp_number_of_mins': parseFloat(payload.tardines_minutes) ||0,
+    'comp_number_of_days': parseFloat(payload.tardines_days) ||0,
+    'comp_mins': parseFloat(payload.tardines_total_minutes) ||0,
+    'comp_days': parseFloat(payload.tardines_total_days) ||0,
+    'comp_sss': parseFloat(payload.sss) ||0,
+    'comp_phic': parseFloat(payload.phic) ||0,
+    'comp_hdmf': parseFloat(payload.hdmf) ||0,
+    'comp_withholding': parseFloat(payload.withholding) ||0,
+    'comp_sss_loan': parseFloat(payload.sss_loan) ||0,
+    'comp_ar': parseFloat(payload.ar_others) ||0,
+    'comp_retro': parseFloat(payload.retro_others) ||0,
+    'comp_allowance': parseFloat(payload.allowance) ||0,
+    'comp_pay_roll_dates': payload.pay_roll_dates,
+    'comp_pay_roll_dates_begin': payload.pay_roll_dates_begin,
+    'comp_pay_roll_dates_end': payload.pay_roll_dates_end,
+  };
 
 
-  if(_roll_id){
-    axiosClient.put(`/compensation/${_roll_id}?${new URLSearchParams(data).toString()}`)
+    axiosClient.post('/compensation', data )
     .then((res)=>{
       setPayload({});
       document.getElementById('employee_payroll').close();
-      getListOfPayroll();
+      getAllRates();
       swal({
         title: "Good job!",
         text: res.data.message,
@@ -313,43 +181,65 @@ const handleSubmitPayroll = (e) => {
       });
     })
     .catch((err)=>{
-     
+   
        const {response} = err;
        if(response &&  response.status  === 422){
-       console.log(response)
+         setError(response.data.errors)
+         setTimeout(() => {
+          setError(null)
+        }, 2000);
        }
     })
-    return;
-  }
-
-  axiosClient.post('/compensation', data )
-  .then((res)=>{
-    getListOfPayroll();
-    setPayload({});
-    setEmployees([]);
-    document.getElementById('employee_payroll').close();
-    swal({
-      title: "Good job!",
-      text: res.data.message,
-      icon: "success",
-      button: "Okay!",
-    });
-    
-  })
-  .catch((err)=>{
-  
-    const {response} = err;
-    if(response &&  response.status  === 422){
-      console.log(response)
-    }
-  })
-
-
-
-
-  
+ 
    
 }
+
+
+const calculateDateRange = () => {
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  let dayOfMonth;
+  if (currentMonth === 0 || currentMonth === 2 || currentMonth === 4 || currentMonth === 6 || currentMonth === 7 || currentMonth === 9 || currentMonth === 11) {
+    dayOfMonth = 31;
+  } else if (currentMonth === 1) {
+    const isLeapYear = (currentYear % 4 === 0 && currentYear % 100 !== 0) || currentYear % 400 === 0;
+    dayOfMonth = isLeapYear ? 29 : 28;
+  } else {
+    dayOfMonth = 30;
+  }
+  
+  const payDateOfMonth = new Date(currentYear, currentMonth, dayOfMonth);
+
+  let start, end;
+  if (payDateOfMonth) {
+    start = new Date(currentYear, currentMonth, 6);
+    end = new Date(currentYear, currentMonth, 20);
+  } else {
+    start = new Date(currentYear, currentMonth - 1, 21);
+    end = new Date(currentYear, currentMonth, 5);
+  }
+
+  const formatDate = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0'); 
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+  
+  const start_date = formatDate(start);
+  const end_date = formatDate(end);
+  const payDate = formatDate(payDateOfMonth);
+
+  setPayload({
+   ...payload,
+   pay_roll_dates_begin: start_date,
+   pay_roll_dates_end: end_date,
+    pay_roll_dates: payDate
+  })
+
+};
+
 
 
 
@@ -380,20 +270,36 @@ const handleSubmitPayroll = (e) => {
   return (
     <div>
       <div className="ml-auto mb-6 lg:w-[75%] xl:w-[80%] 2xl:w-[85%]">
-          <div className="bg-white shadow rounded-lg p-4 sm:p-6 xl:p-8 m-5">
-                     <div className="mb-4 flex items-end  gap-5 max-md:flex-col-reverse max-md:gap-6">
-                        <div className="flex-shrink-0 flex justify-center items-center gap-3" onClick={()=>{
-                           document.getElementById('employee_payroll').showModal();
-                        }}>
-                        <div className='shadow-md p-1 bg-[#0984e3] rounded-md text-white cursor-pointer transition-all ease-in opacity-75 hover:opacity-100'>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                        </div>
-                          <span className='font-bold opacity-70'>PAYROLL</span>
-                        </div>
-                     </div>
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6 xl:p-8 m-2">
 
+                     <div className='w-full mb-10'>
+                           <div hidden className="block w-full">
+                                 <div className="relative flex gap-2 items-center  w-[70%] max-md:w-full  focus-within:text-[#0984e3]">
+                                 <span className="absolute left-4 h-6 flex items-center pr-3 border-r border-gray-300 ">
+                                 <svg xmlns="http://ww50w3.org/2000/svg" className="w-4 fill-current" viewBox="0 0 35.997 36.004">
+                                    <path id="Icon_awesome-search" data-name="search" d="M35.508,31.127l-7.01-7.01a1.686,1.686,0,0,0-1.2-.492H26.156a14.618,14.618,0,1,0-2.531,2.531V27.3a1.686,1.686,0,0,0,.492,1.2l7.01,7.01a1.681,1.681,0,0,0,2.384,0l1.99-1.99a1.7,1.7,0,0,0,.007-2.391Zm-20.883-7.5a9,9,0,1,1,9-9A8.995,8.995,0,0,1,14.625,23.625Z"></path>
+                                 </svg>
+                                 </span>
+                                 <input type="search"  name="leadingIcon" id="leadingIcon" placeholder="Search employee payroll here"   className="w-full pl-14 pr-4 py-2.5 rounded-xl text-sm text-gray-600 outline-none border border-gray-300 focus:border-[#0984e3] transition"/>
+                                 {/* {checkboxState.length > 0 && (
+                                    <button className="btn  text-white btn-sm  btn-error" onClick={removePosition} >
+                                    {checkboxState.length > 1? "Delete all": "Delete"}
+                                    </button>
+                                    )} */}
+                           </div>
+                                 
+                          
+                      
+                      </div>
+                        </div>
+
+                        <div role="tablist" className="tabs tabs-boxed w-full max-w-xs mb-5">
+                          <Link to="/paycheck/rates" role="tab" className="tab font-semibold bg-[#3498db] text-white uppercase">Rates</Link>
+                          <Link to="/paycheck/payroll" role="tab" className="tab  font-semibold uppercase">Payroll</Link>
+                          <Link to="/paycheck/payslip" role="tab" className="tab font-semibold uppercase">Payslip</Link>
+                        </div>
+      
+                     
                      <div className="overflow-x-auto">
                       <table className="table">
                         <thead>
@@ -401,14 +307,27 @@ const handleSubmitPayroll = (e) => {
                 
                             <th className='tracking-wider'>NAME'S</th>
                             <th className='tracking-wider'>BANK ACCOUNT</th>
-                            <th className='tracking-wider'>TAXABL INCOME</th>
-                            <th className='tracking-wider'>NET PAY</th>
-                            <th className='tracking-wider'>PAYROLL DATES</th>
+                            <th className='tracking-wider'>BASIC SALARY</th>
+                            <th className='tracking-wider'>NIGHT DIFF</th>
+                            <th className='tracking-wider'>BI-MONTHLY SALARY</th>
+                            <th className='tracking-wider'>TOTAL MONTHLY</th>
+                            <th className='tracking-wider'>REVIEW ADJUSTMENT DATE</th>
                             <th className='tracking-wider'>ACTION</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {compensations && compensations.map((com, i)=> {
+                        {loadPage ? (
+                                            <tr>
+                                            <td className="p-4 whitespace-nowrap text-sm font-normal text-gray-900" colSpan="4">
+                                               <div className='ml-5 flex items-center gap-2 '>
+                                                 <span className="loading loading-ring loading-lg text-primary"></span>
+                                                  <span className="font-bold opacity-80">Loading for employee rates...</span>
+                                               </div>
+                                            </td>
+             
+                                         </tr>
+                                       ):  compensations.length  ?  
+                           compensations.map((com, i)=> {
                             return (
                                     <tr key={i}>
                                 
@@ -421,70 +340,47 @@ const handleSubmitPayroll = (e) => {
                                           </div>
                                           <div>
                                         
-                                            <div className="font-bold">{com.employee_name}</div>
-                                            <div className="text-sm opacity-50">{com.employee_email}</div>
+                                            <div className="font-bold uppercase">{com.employee_name} {com.position && `/ ${ com.position}`}</div>
+                                            <div className="text-sm opacity-50">{com.employee_email || com.employee_id} </div>
                                           </div>
                                         </div>
                                       </td>
                                       <td className='whitespace-nowrap'>
-                                        <span className="font-semibold opacity-75">{com.comp_acount_name}</span>
+                                        <span className="font-semibold opacity-75">{com.rates_acount_name}</span>
                                         <br/>
-                                        <span className="badge badge-ghost badge-sm"> {com.comp_account_num}</span>
+                                        <span className="badge badge-ghost badge-sm"> {com.rates_account_num}</span>
                                       </td>
-                                      <td className="font-semibold">{com.taxable_income && com.taxable_income.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</td>
-                                      <td className="font-semibold text-red-500">{com.totalNetPay && com.totalNetPay.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</td>
-                                      <td className="font-semibold ">{com.comp_pay_roll_dates && moment(com.comp_pay_roll_dates).calendar()}</td>
+                                      <td className="font-semibold text-blue-500">{com.rates_basic_salary && com.rates_basic_salary.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</td>
+                                      <td className="font-semibold text-red-500">{com.rates_night_diff && com.rates_night_diff.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</td>
+                                      <td className="font-semibold text-red-500">{com.bi_montly && com.bi_montly.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</td>
+                                      <td className="font-semibold text-red-500">{com.total_montly && com.total_montly.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</td>
+                                      <td className="font-semibold uppercase">{moment(com.rates_review_adjustments).format("LL")}</td>
                                       <td className="pt-6 px-2 whitespace-nowrap text-sm font-semibold text-gray-900 flex gap-2 max-md:hidden">
                                       <button type="button" onClick={() =>{
                                           setLoad(true)
                                           setPay_id(com?.compe_id)
-                                          axiosClient.get(`/compensation/${com.compe_id}`)
+                                          axiosClient.get(`/rates/${com.compe_id}`)
                                           .then((data)=>{
                                             setLoad(false)
+                                            calculateDateRange()
 
                                             document.getElementById('employee_payroll_details').showModal();
                                             const {
-                                                comp_per_hour_day,
-                                                comp_number_of_mins,
-                                                comp_number_of_days,                                               
-                                                comp_bi_monthly,
-                                                comp_night_diff,
-                                                comp_holiday_or_ot,
-                                                comp_comission,
-                                                comp_sss,
-                                                comp_phic,
-                                                comp_hdmf,
-                                                comp_retro,
-                                                comp_allowance,
-                                                comp_withholding,
-                                                comp_sss_loan,
-                                                comp_ar
+                                                rates_basic_salary
                                               } = data.data.data;
-                                            let totalMinutes = calculateTotalMinutes(comp_per_hour_day, comp_number_of_mins)
-                                            let totalDays = calculateTotalDays(comp_per_hour_day, comp_number_of_days)
-                                            let taxable_income = calculateTaxableIncome(
-                                              comp_bi_monthly,
-                                              comp_night_diff,
-                                              comp_holiday_or_ot,
-                                              comp_comission,
-                                              totalMinutes,
-                                              totalDays,
-                                              comp_sss,
-                                              comp_phic,
-                                              comp_hdmf
-                                            )
-                                            let totalNetPay = calculateNetpay(
-                                              taxable_income,
-                                              comp_retro,
-                                              comp_allowance,
-                                              comp_withholding,
-                                              comp_sss_loan,
-                                              comp_ar
-                                            )
-                                             setCompDetails({...data.data.data, totalMinutes, totalDays, taxable_income, totalNetPay, payslip_id: com?.payslip_id });
+                                          
+                                           
+                                        
+                                            const daily = rates_basic_salary / 21.75
+                                            const hourly = daily / 8
+                                            const hourly_rate = (2.1 / 100) * hourly
 
-
-                                   
+                                    
+                                             setCompDetails({...data.data.data, 
+                                              hourly, 
+                                              hourly_rate, 
+                                              daily, 
+                                            });
                                           })
                                           .catch((err)=>{
                                              const {response} = err;
@@ -497,154 +393,41 @@ const handleSubmitPayroll = (e) => {
                                         {load && pay_id == com?.compe_id ? (
                                             <span className="loading loading-spinner loading-sm text-[#0984e3]"></span>
                                         ): (
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 text-green-500 cursor-pointer transition-all opacity-75 hover:opacity-100">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Zm3.75 11.625a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                                        </svg>
-                                        )}
-                                      </button> 
-                                      <span>/</span>
-                                      <button onClick={()=>{
-
-                                          setLoad1(true);
-                                          setRoll_id(com?.compe_id);
-
-                                         axiosClient.get(`/compensation/${com.compe_id}`)
-                                         .then((data)=>{
-                                          setLoad1(false);
-                                        
-                                           const datas = {
-                                            'employee_name': data.data.data.employee_name,
-                                            'position': data.data.data.position,
-                                            'employee_role': data.data.data.employee_role,
-                                            'employee_id':data.data.data.emp_id,
-                                            'emp_id':data.data.data.employee_id,
-                                            'amount': data.data.data.comp_bi_monthly,
-                                            'bi_montly': data.data.data.comp_bi_monthly,
-                                            'per_hour_day': data.data.data.comp_per_hour_day,
-                                            'night_diff': data.data.data.comp_night_diff,
-                                            'holiday_OT': data.data.data.comp_holiday_or_ot,
-                                            'incentive': data.data.data.comp_comission,
-                                            'tardines_minutes': data.data.data.comp_number_of_mins,
-                                            'tardines_days': data.data.data.comp_number_of_days,
-                                            'tardines_total_minutes': data.data.data.comp_mins,
-                                            'tardines_total_days': data.data.data.comp_days,
-                                            'sss': data.data.data.comp_sss,
-                                            'phic': data.data.data.comp_phic,
-                                            'hdmf': data.data.data.comp_hdmf,
-                                            'withholding': data.data.data.comp_withholding,
-                                            'sss_loan': data.data.data.comp_sss_loan,
-                                            'ar_others': data.data.data.comp_ar,
-                                            'retro_others': data.data.data.comp_retro,
-                                            'allowance': data.data.data.comp_allowance,
-                                            'account_number': data.data.data.comp_account_num,
-                                            'bank_name': data.data.data.comp_acount_name,
-                                            'pay_roll_dates': data.data.data.comp_pay_roll_dates
-                                        };
-
-
-                             
-                                       
-                                           let totalMinutes = calculateTotalMinutes(datas.per_hour_day, datas.tardines_minutes)
-                                           let totalDays = calculateTotalDays(datas.per_hour_day, datas.tardines_days)
-                                           
-                                          
-                                           let taxable_income = calculateTaxableIncome(
-                                            datas.bi_montly,
-                                            datas.night_diff,
-                                            datas.holiday_OT,
-                                            datas.incentive,
-                                            totalMinutes,
-                                            totalDays,
-                                            datas.sss,
-                                            datas.phic,
-                                            datas.hdmf
-                                          )
-
-                                      
-                            
-                                               
-                                          let totalNetPay = calculateNetpay(
-                                           taxable_income,
-                                           datas.retro_others,
-                                           datas.allowance,
-                                           datas.withholding,
-                                           datas.sss_loan,
-                                           datas.ar_others
-                                          )
-
-
-                                         
-
-                                           setPayload({
-                                            ...payload,
-                                            ...datas,
-                                            totalMinutes,
-                                            totalDays,
-                                            taxable_income,
-                                            total_net_pay:totalNetPay
-                                          
-                                          })
-                                           
-
-                                          document.getElementById('employee_payroll').showModal();
-            
-                                         })
-                                         .catch((err)=>{
-                                            const {response} = err;
-                                            if(response &&  response.status  === 422){
-                                              console.log(response.data)
-                                            }
-                                         })
-                                      }}>
-                                         {load1 && _roll_id == com?.compe_id ? (
-                                            <span className="loading loading-spinner loading-sm text-[#0984e3]"></span>
-                                        ): (
-                                          <svg  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 text-[#0984e3] cursor-pointer transition-all opacity-75 hover:opacity-100">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                          </svg>
-                                        )}
-                                      </button> 
-
                                   
-                                      {com?.payslip_id && (
-                                        <>
-                                            <span>/</span>
-                                            <button onClick={()=> {
-                                         
-                                         document.getElementById('employee_payslip_details').showModal();
-                                         axiosClient.get(`/payslip/${com.compe_id}`)
-                                         .then(pay => {
-                                          set_Id(pay.data.pay_id)
-                                        setPayload({
-                                          ...payload,
-                                          ...pay.data,
-                                          earnings_per_day_hour:pay.data.comp_per_hour_day
-                                        })
-                                         })
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-green-500 cursor-pointer transition-all opacity-75 hover:opacity-100">
+                                        <path d="M11.625 16.5a1.875 1.875 0 1 0 0-3.75 1.875 1.875 0 0 0 0 3.75Z" />
+                                        <path fillRule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875Zm6 16.5c.66 0 1.277-.19 1.797-.518l1.048 1.048a.75.75 0 0 0 1.06-1.06l-1.047-1.048A3.375 3.375 0 1 0 11.625 18Z" clipRule="evenodd" />
+                                        <path d="M14.25 5.25a5.23 5.23 0 0 0-1.279-3.434 9.768 9.768 0 0 1 6.963 6.963A5.23 5.23 0 0 0 16.5 7.5h-1.875a.375.375 0 0 1-.375-.375V5.25Z" />
+                                        </svg>
 
                                       
-                                    }}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 text-red-500 cursor-pointer transition-all opacity-75 hover:opacity-100">
-                                     <path strokeLinecap="round" strokeLinejoin="round" d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                                    </svg>
-                                    </button> 
-                                        </>
-                                      )}
-
+                                        )}
+                                      </button> 
+                                    
                                       </td>
                                     </tr>
 
 
                             )
-                          })}
+                          }): (
+                            <tr>
+                                       <td className="p-4 whitespace-nowrap text-sm font-normal text-gray-900" colSpan="4">
+                                          <div className='ml-5'>
+                                             <span className="font-bold opacity-80">No employee rates found!</span>
+                                          </div>
+                                       </td>
+                                    </tr>
+                          )}
 
                         </tbody>
                         <tfoot>
                           <tr>
                             <th></th>
                             <th>TOTAL :</th>
-                            <th className='text-blue-500'>{totalDataAmount.allTaxAmmount ? totalDataAmount.allTaxAmmount.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : "0.00"}</th>
-                            <th className='text-red-500'>{totalDataAmount.allTaxNetPay ? totalDataAmount.allTaxNetPay.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : "0.00"}</th>
+                            <th className='text-blue-500'>{totalDataAmount.allBasicSalary ? totalDataAmount.allBasicSalary.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : "0.00"}</th>
+                            <th className='text-blue-500'>{totalDataAmount.allNightDiff ? totalDataAmount.allNightDiff.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : "0.00"}</th>
+                            <th className='text-red-500'>{totalDataAmount.allBiMonthly ? totalDataAmount.allBiMonthly.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : "0.00"}</th>
+                            <th className='text-red-500'>{totalDataAmount.allTotalMonthly ? totalDataAmount.allTotalMonthly.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) : "0.00"}</th>
                             <th></th>
                           </tr>
                         </tfoot>
@@ -654,369 +437,99 @@ const handleSubmitPayroll = (e) => {
             </div>
             
       </div> 
-
- 
-
-
-    
-   <dialog id="employee_payslip" className="modal">
-      <div className="modal-box w-11/12 max-w-5xl">
-       <h3 className="font-bold text-lg mt-5">EMPLOYEE PAYSLIP</h3>
-       <span className="label-text opacity-70 text-[12px]">Input all the fields below</span>
-        <form  method="dialog" autoComplete="off" onSubmit={handleSubmitPayload}>
-           <div className='flex w-full gap-4'>
-              <div className='flex justify-center items-center flex-col w-full mb-2'>
-                <label className="form-control w-full ">
-                    <div className="label">
-                      <span className="label-text">Choose employee name:</span>
-                  </div>
-                  <span className='font-bold opacity-70 uppercase'>{compDetails?.employee_name} {compDetails?.position && `/ ${compDetails?.position}`}</span>           
-                </label>
-
-                <label className="form-control w-full ">
-                    <div className="label">
-                      <span className="label-text">Choose employee name:</span>
-                  </div>
-                <input type="text" placeholder="Employee ID" value={compDetails?.employee_id} disabled className="input font-semibold input-bordered w-full" />  
-                </label>
-                
-              </div>
-              <div className='w-full'>
-              <label className="form-control w-full ">
-                  <div className="label">
-                    <span className="label-text">Pay Period Begin Date:</span>
-                  </div>
-                  <input type="date" value={payload.pay_period_begin || ""} placeholder="Input here..." className="input font-semibold input-bordered w-full " onChange={(e)=> {
-                    setPayload({...payload, pay_period_begin: e.target.value})
-                  }} />
-                </label>
-                <label className="form-control w-full ">
-                  <div className="label">
-                    <span className="label-text">Pay Period End Date:</span>
-                  </div>
-                  <input type="date" value={payload.pay_period_end || ""} placeholder="Input here..." className="input font-semibold input-bordered w-full " onChange={(e)=> {
-                    setPayload({...payload, pay_period_end: e.target.value})
-                  }} />
-                </label>
-              </div>
-           </div>
-           <div className="divider"></div> 
-           <div className='flex w-full gap-4'>
-            <div className='w-full'>
-            <p className="font-bold text-center text-md">EARNINGS</p>
-            <div className='my-2 flex flex-col gap-3'>
-              <label className="input input-bordered flex items-center gap-2">
-                Per Month:
-                <input type="number" min={0} value={payload?.earnings_per_month || ""} name='earnings_per_month' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Per Day/Hour:
-                <input type="number"  min={0} value={payload?.earnings_per_day_hour || ""} name='earnings_per_day_hour' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Allowance:
-                <input type="number"  min={0} value={payload?.earnings_allowance || ""} name='earnings_allowance' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Night Diff:
-                <input type="number"  min={0} value={payload?.earnings_night_diff || ""} name='earnings_night_diff' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Holiday:
-                <input type="number"  min={0} value={payload?.earnings_holiday || ""} name='earnings_holiday' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Retro/Others:
-                <input type="number"  min={0} value={payload?.earnings_retro || ""} name='earnings_retro' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-               Bonus/Commission:
-                <input type="number"  min={0} value={payload?.earnings_commission || ""} name='earnings_commission' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input  flex items-center gap-2">
-              </label>
-              <label className="input  flex items-center gap-2">
-              </label>
-              <label className="input  flex items-center gap-2">
-              </label>
-              <label className="input flex items-center gap-2">
-                 <span className='font-bold'>TOTAL EARNINGS:</span> 
-                <input type="number" value={payload.earnings_total ? payload.earnings_total.toFixed(2) : "0.00"} disabled className="grow font-semibold text-blue-500" placeholder="" onChange={(e)=> setPayload({...payload, earnings_total:e.target.value})}  />
-              </label>
-            </div>
-             
-            </div>
-            <div className='w-full'>
-            <p className="font-bold text-center text-md">DEDUCTIONS</p>
-            <div className='my-2 flex flex-col gap-3'>
-              <label className="input input-bordered flex items-center gap-2">
-               LWOP/Lates/Undertime:
-                <input type="number" min={0} value={payload?.deductions_lwop || ""} name='deductions_lwop' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Withholding Tax:
-                <input type="number"  min={0} value={payload?.deductions_holding_tax || ""} name='deductions_holding_tax' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                SSS Contribution:
-                <input type="number"  min={0} value={payload?.deductions_sss_contribution || ""} name='deductions_sss_contribution' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-               PHIC Contribution:
-                <input type="number"  min={0} value={payload?.deductions_phic_contribution || ""} name='deductions_phic_contribution' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                HDMF Contribution:
-                <input type="number"  min={0} value={payload?.deductions_hdmf_contribution || ""} name='deductions_hdmf_contribution' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-               HMO:
-                <input type="number"  min={0} value={payload?.deductions_hmo || ""} name='deductions_hmo' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                SSS Loan:
-                <input type="number"  min={0} value={payload?.deductions_sss_loan || ""} name='deductions_sss_loan' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                HDMF Loan:
-                <input type="number"  min={0} value={payload?.deductions_hmo_loan || ""} name='deductions_hmo_loan' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Employee Loan:
-                <input type="number"  min={0} value={payload?.deductions_employee_loan || ""} name='deductions_employee_loan' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Others:
-                <input type="number"  min={0} value={payload?.deductions_others || ""} name='deductions_others' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input  flex items-center gap-2">
-                <span className='font-bold '>TOTAL DEDUCTION:</span> 
-                <input type="number" disabled className="grow font-semibold text-blue-500" placeholder="" value={payload.deductions_total ? payload.deductions_total.toFixed(2) : "0.00"} onChange={(e)=> setPayload({...payload, deductions_total:e.target.value})} />
-              </label>
-            </div>
-            </div>
-           </div>
-           <div className="divider"></div> 
-           <label className="input  flex items-center gap-2">
-                <span className='font-bold'>NET SALARY:</span> 
-                <input type="number" disabled className="grow font-semibold text-red-500" value={payload.payslip_netPay ? payload.payslip_netPay.toFixed(2) : "0.00"} placeholder="" />
-              </label>
-         
-            <p  className="text-red text-xs italic text-red-500 ml-2 error-message"></p>
-            <div className="modal-action">
-                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]">
-                   SUBMIT PAYSLIP
-                   </button>
-                <button type='button' className="btn shadow" onClick={()=>{
-                   setPayload({});
-                   document.getElementById('employee_payslip').close();
-                }}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-            </div>
-            </form>
-      </div>
-    </dialog> 
-
-    <dialog id="employee_payslip_details" className="modal">
-      <div className="modal-box w-11/12 max-w-5xl">
-       <h3 className="font-bold text-lg mt-5">EMPLOYEE PAYSLIP</h3>
-       <span className="label-text opacity-70 text-[12px]">Input all the fields below</span>
-        <form  method="dialog" autoComplete="off" onSubmit={handleSubmitPayload}>
-           <div className='flex w-full gap-4'>
-              <div className='flex justify-center items-center flex-col w-full mb-2'>
-                <label className="form-control w-full ">
-                    <div className="label">
-                      <span className="label-text">Choose employee name:</span>
-                  </div>
-                  <span className='font-bold opacity-70 uppercase'>{payload?.employee_name} {payload?.position && `/ ${payload?.position}`}</span>             
-                </label>
-
-                <label className="form-control w-full ">
-                    <div className="label">
-                      <span className="label-text">Employee ID:</span>
-                  </div>
-                <input type="text" placeholder="Employee ID" value={payload?.employee_id} disabled className="input font-bold input-bordered w-full" />  
-                </label>
-                
-              </div>
-              <div className='w-full'>
-              <label className="form-control w-full ">
-                  <div className="label">
-                    <span className="label-text">Pay Period Begin Date:</span>
-                  </div>
-                  <input type="date" value={payload.pay_period_begin || ""} placeholder="Input here..." className="input input-bordered w-full font-semibold" onChange={(e)=> {
-                    setPayload({...payload, pay_period_begin: e.target.value})
-                  }} />
-                </label>
-                <label className="form-control w-full ">
-                  <div className="label">
-                    <span className="label-text">Pay Period End Date:</span>
-                  </div>
-                  <input type="date" value={payload.pay_period_end || ""} placeholder="Input here..." className="input input-bordered w-full font-semibold" onChange={(e)=> {
-                    setPayload({...payload, pay_period_end: e.target.value})
-                  }} />
-                </label>
-              </div>
-           </div>
-           <div className="divider"></div> 
-           <div className='flex w-full gap-4'>
-            <div className='w-full'>
-            <p className="font-bold text-center text-md">EARNINGS</p>
-            <div className='my-2 flex flex-col gap-3 '>
-              <label className="input input-bordered  flex items-center gap-2 ">
-                Per Month:
-                <input type="number" min={0} value={payload?.earnings_per_month || ""} disabled name='earnings_per_month' className="grow cursor-not-allowed font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered  flex items-center gap-2">
-                Per Day/Hour:
-                <input type="number"  min={0} value={payload?.earnings_per_day_hour || ""} disabled name='earnings_per_day_hour' className="grow cursor-not-allowed font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered  flex items-center gap-2">
-                Allowance:
-                <input type="number"  min={0} value={payload?.earnings_allowance || ""} disabled name='earnings_allowance' className="grow cursor-not-allowed font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered  flex items-center gap-2">
-                Night Diff:
-                <input type="number"  min={0} value={payload?.earnings_night_diff || ""} disabled name='earnings_night_diff' className="grow cursor-not-allowed font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered  flex items-center gap-2">
-                Holiday:
-                <input type="number"  min={0} value={payload?.earnings_holiday || ""} disabled name='earnings_holiday' className="grow cursor-not-allowed font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Retro/Others:
-                <input type="number"  min={0} value={payload?.earnings_retro || ""} disabled name='earnings_retro' className="grow cursor-not-allowed font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-               Bonus/Commission:
-                <input type="number"  min={0} value={payload?.earnings_commission || ""} disabled name='earnings_commission' className="grow cursor-not-allowed font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input  flex items-center gap-2">
-              </label>
-              <label className="input  flex items-center gap-2">
-              </label>
-              <label className="input  flex items-center gap-2">
-              </label>
-              <label className="input flex items-center gap-2">
-                 <span className='font-bold'>TOTAL EARNINGS:</span> 
-                <input type="number" value={payload.earnings_total ? payload.earnings_total.toFixed(2) : "0.00"} disabled className="grow font-semibold text-blue-500" placeholder="" onChange={(e)=> setPayload({...payload, earnings_total:e.target.value})}  />
-              </label>
-            </div>
-             
-            </div>
-            <div className='w-full'>
-            <p className="font-bold text-center text-md">DEDUCTIONS</p>
-            <div className='my-2 flex flex-col gap-3'>
-              <label className="input input-bordered input-info flex items-center gap-2">
-               LWOP/Lates/Undertime:
-                <input type="number" min={0} value={payload?.deductions_lwop || ""} name='deductions_lwop' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip} />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                Withholding Tax:
-                <input type="number"  min={0} value={payload?.deductions_holding_tax || ""} name='deductions_holding_tax' className="grow cursor-not-allowed font-semibold" disabled placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                SSS Contribution:
-                <input type="number"  min={0} value={payload?.deductions_sss_contribution || ""} name='deductions_sss_contribution' className="grow cursor-not-allowed font-semibold" disabled placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-               PHIC Contribution:
-                <input type="number"  min={0} value={payload?.deductions_phic_contribution || ""} name='deductions_phic_contribution' className="grow cursor-not-allowed font-semibold" disabled placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                HDMF Contribution: 
-                <input type="number"  min={0} value={payload?.deductions_hdmf_contribution || ""} name='deductions_hdmf_contribution' className="grow cursor-not-allowed font-semibold" disabled placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered input-info flex items-center gap-2">
-               HMO:
-                <input type="number"  min={0} value={payload?.deductions_hmo || ""} name='deductions_hmo' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                SSS Loan:
-                <input type="number"  min={0} value={payload?.deductions_sss_loan || ""} name='deductions_sss_loan' className="grow cursor-not-allowed font-semibold" disabled placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered flex items-center gap-2">
-                HDMF Loan:
-                <input type="number"  min={0} value={payload?.deductions_hmo_loan || ""} name='deductions_hmo_loan' className="grow cursor-not-allowed font-semibold" disabled placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered input-info flex items-center gap-2">
-                Employee Loan:
-                <input type="number"  min={0} value={payload?.deductions_employee_loan || ""} name='deductions_employee_loan' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input input-bordered input-info flex items-center gap-2">
-                Others:
-                <input type="number"  min={0} value={payload?.deductions_others || ""} name='deductions_others' className="grow font-semibold" placeholder="Input here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculatePaySlip}  />
-              </label>
-              <label className="input  flex items-center gap-2">
-                <span className='font-bold'>TOTAL DEDUCTION:</span> 
-                <input type="number" disabled className="grow font-semibold text-blue-500" placeholder="" value={payload.deductions_total ? payload.deductions_total.toFixed(2) : "0.00"} onChange={(e)=> setPayload({...payload, deductions_total:e.target.value})} />
-              </label>
-            </div>
-            </div>
-           </div>
-           <div className="divider"></div> 
-           <label className="input  flex items-center gap-2">
-                <span className='font-bold'>NET SALARY: </span> 
-                <input type="number" disabled className="grow font-semibold text-red-500" value={payload.payslip_netPay ? payload.payslip_netPay.toFixed(2) : "0.00"} placeholder="" />
-              </label>
-         
-            <p  className="text-red text-xs italic text-red-500 ml-2 error-message"></p>
-            <div className="modal-action">
-                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]">
-                   {_id ? "UPDATE PAYSLIP" : "SUBMIT PAYSLIP"}
-                   </button>
-                <button type='button' className="btn shadow" onClick={()=>{
-                   setPayload({});
-                   set_Id("")
-                   document.getElementById('employee_payslip_details').close();
-                }}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-            </div>
-            </form>
-      </div>
-    </dialog> 
-
-     
-   
+  
       <dialog id="employee_payroll_details" className="modal">
         <div className="modal-box w-11/12 max-w-5xl">
-        <h3 className="font-bold text-lg mt-5">EMPLOYEE PAYROLL</h3>
-        <span className="label-text opacity-70 text-[12px] ">Below are the details of the payroll for the employee.</span>
-         
+        <div className="w-full flex flex-col justify-center items-center">
+         <div className=" w-60 rounded">
+            <img src="/onsource_logo.png" />
+         </div>
+         <p className="label-text opacity-70 text-[12px] font-bold mt-5">OnSource Inc.</p>
+         <p className=" opacity-70 text-[12px] font-semibold">Office 10th flr, The Space Bldg. AS Fortuna St., Banilad, Mandaue City, 6014 Cebu.</p>
+         </div>
+         <div className="divider"></div> 
+        <h3 className="font-bold text-lg mt-5 text-center my-4 opacity-70">EMPLOYEE RATE DETAILS</h3>
+        <div className="divider"></div> 
           <form  method="dialog" className='mt-2' autoComplete="off">
            <div className='flex w-full gap-4'>
-              <div className='flex justify-center items-center flex-col w-full mb-2'>
-                <label className="form-control w-full mb-4">
+              <div className='flex justify-center items-center flex-col w-full'>
+                <label className="form-control w-full ">
                     <div className="label">
-                      <span className="label-text">Employee namesss:</span>
+                      <span className="label-text font-semibold opacity-70">Employee names:</span>
                   </div>
-                  <span className='font-bold opacity-70 uppercase'>{compDetails?.employee_name} {compDetails?.position && `/ ${compDetails?.position}`}</span>             
+                  <span className='font-bold opacity-70 uppercase text-blue-500'>{compDetails?.employee_name} {compDetails?.position && `/ ${compDetails?.position}`}</span>             
                 </label>
 
                 <label className="form-control w-full ">
                     <div className="label">
-                      <span className="label-text">Employee ID:</span>
+                      <span className="label-text font-semibold opacity-70">Employee ID:</span>
                   </div>
-                  <span className='font-bold opacity-70'>{compDetails?.employee_id}</span>             
+                  <span className='font-bold opacity-70 text-red-500'>{compDetails?.employee_id}</span>             
                 </label>
               </div>
               <div className='w-full'>
               <label className="form-control w-full">
                   <div className="label">
-                    <span className="label-text">Payroll Dates:</span>
+                    <span className="label-text font-semibold opacity-70">Review Adjustment Date:</span>
                   </div>
-                  <span className='font-bold opacity-70'>{compDetails?.comp_pay_roll_dates && moment(compDetails?.comp_pay_roll_dates).calendar()}</span> 
+                  <span className='font-bold opacity-70 ml-1 text-red-500'>{compDetails?.rates_review_adjustments && moment(compDetails?.rates_review_adjustments).format("LL") }</span> 
                 </label>
-           
+
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text font-semibold opacity-70">Bank Details:</span>
+                  </div>
+                  <span className='font-bold opacity-70 ml-1 text-blue-500'>{compDetails?.rates_acount_name} / {compDetails?.rates_account_num}</span> 
+                </label>
+
+                
               </div>
            </div>
+           
            <div className="divider"></div> 
-           <div className='flex w-full flex-col gap-4'> 
+           <div className='flex w-full flex-col gap-4 mb-5'> 
             <div className='w-full'>
             <div className="flex-shrink-0 flex items-center gap-3 ml-2 mb-3" >
-              <span className='font-bold opacity-70'>EARNINGS : </span>             
+              <span className='font-bold opacity-70 text-blue-500'>BASIC SALARY DETAILS : </span>             
+            </div>
+
+            <div className="overflow-x-auto mb-3">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Basic</th>
+                    <th>Night Differential</th>
+                    <th>Allowance</th>
+                  </tr>
+                </thead>
+                <tbody>
+             
+                  <tr>
+                    <td>
+                      <span className='opacity-70 font-semibold'>{compDetails?.rates_basic_salary?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>    
+                    </td>
+                    <td>
+                      <span className='opacity-70 font-semibold'>{(compDetails?.rates_night_diff)?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>  
+                      </td>
+                    <td>
+                       <span className='opacity-70 font-semibold'>{(compDetails?.rates_allowance)?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>    
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+           
+
+            </div>
+           
+           </div>
+
+       
+           <div className='flex w-full flex-col gap-4 mb-7'> 
+            <div className='w-full'>
+            <div className="flex-shrink-0 flex items-center gap-3 ml-2 mb-3" >
+              <span className='font-bold opacity-70 text-blue-500'>EARNINGS : </span>             
             </div>
 
             <div className="overflow-x-auto mb-3">
@@ -1024,21 +537,21 @@ const handleSubmitPayroll = (e) => {
                 <thead>
                   <tr>
                     <th>Bi-Monthly</th>
-                    <th>Per Hour/day</th>
-                    <th>Amount</th>
+                    <th>Night Differential </th>
+                    <th>Allowance</th>
                   </tr>
                 </thead>
                 <tbody>
              
                   <tr>
                     <td>
-                      <span className='opacity-70 font-semibold'>{compDetails?.comp_bi_monthly.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>    
+                      <span className='opacity-70 font-semibold'>{(compDetails?.rates_basic_salary / 2)?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>    
                     </td>
                     <td>
-                      <span className='opacity-70 font-semibold'>{compDetails?.comp_per_hour_day}</span>  
+                      <span className='opacity-70 font-semibold'>{(compDetails?.rates_night_diff / 2)?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>  
                       </td>
                     <td>
-                       <span className='opacity-70 font-semibold'>{compDetails?.comp_bi_monthly.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>    
+                       <span className='opacity-70 font-semibold'>{(compDetails?.rates_allowance / 2)?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>    
                     </td>
                   </tr>
                 </tbody>
@@ -1049,21 +562,25 @@ const handleSubmitPayroll = (e) => {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Night  Differential</th>
-                    <th>Holiday/OT</th>
-                    <th>Commission/Incentive/ Bonus/ Others</th>
+                    <th>Daily</th>
+                    <th>Hourly</th>
+                    <th>13th month</th>
+                    <th>2.1 %</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>
-                      <span className=' opacity-70 font-semibold'>{compDetails?.comp_night_diff.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
+                      <span className=' opacity-70 font-semibold'>{compDetails?.daily?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>
                     </td>
                     <td>
-                      <span className=' opacity-70 font-semibold'>{compDetails?.comp_holiday_or_ot.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
+                      <span className=' opacity-70 font-semibold'>{compDetails?.hourly?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>
                     </td>
                     <td>
-                      <span className=' opacity-70 font-semibold'>{compDetails?.comp_comission.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
+                      <span className=' opacity-70 font-semibold'>{compDetails?.rates_thirteenth_pay?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>
+                    </td>
+                    <td>
+                      <span className=' opacity-70 font-semibold'>{compDetails?.hourly_rate.toFixed(2) || "0.00"}</span>
                     </td>
                   </tr>
                  
@@ -1072,203 +589,70 @@ const handleSubmitPayroll = (e) => {
             </div>
 
             </div>
-            <div className='w-full'>
-            <div className="flex-shrink-0 flex items-center gap-3 ml-2 mb-3" >
-              <span className='font-bold opacity-70'>DEDUCTIONS : </span>             
-            </div>
-            <span className=' text-sm opacity-60 ml-2'>( Absent/Tardiness )</span>     
-            <div className="overflow-x-auto mb-2">
-              <table className="table">
-                {/* head */}
-                <thead>
-                  <tr>
-                    <th># mins.</th>
-                    <th># days</th>
-                    <th>mins.</th>
-                    <th>days</th>
-                  </tr>
-                </thead>
-                <tbody>
-             
-                  <tr >
-                    <td>
-                      <span className='opacity-70 font-semibold'>{compDetails?.comp_number_of_mins}</span>
-                    </td>
-                    <td>
-                      <span className='opacity-70 font-semibold'>{compDetails?.comp_number_of_days}</span>
-                    </td>
-                    <td>
-                      <span className='opacity-70 font-semibold'>{compDetails?.totalMinutes.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                    </td>
-                    <td>
-                     <span className='opacity-70 font-semibold'>{compDetails?.totalDays.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                    </td>
-                  </tr>
-                 
-                </tbody>
-              </table>
-            </div>
-            <span className=' text-sm opacity-60 ml-2'>( Government Contribution )</span>     
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>SSS</th>
-                    <th>PHIC</th>
-                    <th>HDMF</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                    <span className='opacity-70 font-semibold'>{compDetails?.comp_sss.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                      </td>
-                    <td>
-                    <span className='opacity-70 font-semibold'>{compDetails?.comp_phic.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                      </td>
-                    <td>
-                    <span className='opacity-70 font-semibold'>{compDetails?.comp_hdmf.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            </div>
+           
            </div>
-           <div className='flex w-full  justify-between items-center'> 
-            <label className=" flex items-center gap-2">
-                <span className='font-bold opacity-70'> Withholding Tax: </span> 
-                <span className='opacity-70 font-semibold text-blue-500'>{compDetails?.comp_withholding.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-              </label> 
-            <label className="input  flex items-center gap-2"> 
-                  <span className='font-bold opacity-70'>Taxable Income:</span> 
-                  <span className='opacity-70 font-semibold text-blue-500'>{compDetails?.taxable_income.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-              </label>
-            </div>
           
-          
-            <div className='flex justify-around items-center my-2'>
-            <span className=' text-sm opacity-60'>( Other payments and deductions )</span>     
-            <span className=' text-sm opacity-60'>( Additional )</span>     
-            </div>
-            <div className="overflow-x-auto mb-2">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>SSS Loan</th>
-                    <th>AR others</th>
-                    <th>Retro/others</th>
-                    <th>Allowance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr >
-                    <td>
-                       <span className='opacity-70 font-semibold'>{compDetails?.comp_sss_loan.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                    </td>
-                    <td>
-                       <span className='opacity-70 font-semibold'>{compDetails?.comp_ar.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                    </td>
-                    <td>
-                       <span className='opacity-70 font-semibold'>{compDetails?.comp_retro.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                    </td>
-                    <td>
-                       <span className='opacity-70 font-semibold'>{compDetails?.comp_allowance.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-                    </td>
-                  </tr>
-                 
-                </tbody>
-              </table>
-            </div>
-            <div className="divider"></div>
-            <label className="input  flex items-center gap-2">
-                  <span className='font-bold opacity-70'>Net Pay:</span> 
-                  <span className='opacity-70 font-semibold text-red-500'>{compDetails?.totalNetPay.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })}</span>
-              </label>
+            <div className="modal-action mt-8">
+                  <button className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white" 
+                    onClick={()=>{
+                                        
+                                          document.getElementById('employee_payroll_details').close();
+                                            setLoad1(true);
+                                            setRoll_id(compDetails.compe_id);
+                                          axiosClient.get(`/rates/${compDetails.compe_id}`)
+                                          .then((data)=>{
+                                            setLoad1(false);
 
-              <div className="divider"></div>
-              <div className="flex-shrink-0 flex items-center gap-3 ml-2 mb-3" >
-              <span className='font-bold opacity-70'>Union Bank Details :</span>             
-            </div>    
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Account Numbers</th>
-                    <th>Account Name</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <span className='opacity-70 font-semibold'>{compDetails?.comp_account_num}</span>
-                    </td>
-                    <td>
-                      <span className='opacity-70 font-semibold'>{compDetails?.comp_acount_name}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                                             const datas = {
+                                              'employee_name': data.data.data.employee_name,
+                                              'position': data.data.data.position,
+                                              'employee_role': data.data.data.employee_role,
+                                              'employee_id':data.data.data.emp_id,
+                                              'emp_id':data.data.data.employee_id,
+                                              'amount': data.data.data.rates_basic_salary / 2,
+                                              'bi_montly': data.data.data.rates_basic_salary / 2,
+                                              'per_hour_day': data.data.data.rates_basic_salary / 21.75,
+                                              'night_diff': data.data.data.rates_night_diff / 2,
+                                              'allowance': data.data.data.rates_allowance / 2,
+                                              'account_number': data.data.data.rates_account_num,
+                                              'bank_name': data.data.data.rates_acount_name,
+                                          };
 
-         
-            <p  className="text-red text-xs italic text-red-500 ml-2 error-message"></p>
-            <div className="modal-action">
-              {!compDetails?.payslip_id && (
-                <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]"
-                onClick={()=>{
-                  const data = {
-                    earnings_per_day_hour:compDetails.comp_per_hour_day,
-                    earnings_per_month: compDetails.comp_bi_monthly,
-                    earnings_allowance: compDetails.comp_allowance,
-                    earnings_night_diff: compDetails.comp_night_diff,
-                    earnings_holiday: compDetails.comp_holiday_or_ot,
-                    earnings_retro: compDetails.comp_retro,
-                    earnings_commission: compDetails.comp_comission,
-                    deductions_holding_tax: compDetails.comp_withholding,
-                    deductions_sss_contribution: compDetails.comp_sss,
-                    deductions_phic_contribution: compDetails.comp_phic,
-                    deductions_sss_loan: compDetails.comp_sss_loan,
-                    deductions_hdmf_contribution:compDetails.comp_hdmf,
-                    payroll_id: parseInt(compDetails.compe_id)
+
+                                        const taxable_income = datas.bi_montly + datas.night_diff;
+                                        const total_net_pay =  parseFloat(taxable_income) + parseFloat(datas.allowance);
+
+                            
+                                            setPayload({
+                                              ...payload,
+                                              ...datas,
+                                              per_hour_day: datas.per_hour_day.toFixed(2), 
+                                              taxable_income,
+                                              total_net_pay
+                                            })
+                                            
+
+                                            document.getElementById('employee_payroll').showModal();
+              
+                                          })
+                                          .catch((err)=>{
+                                              const {response} = err;
+                                              if(response &&  response.status  === 422){
+                                                console.log(response.data)
+                                              }
+                                          })
+                    }}>
                 
-                }
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
 
-                  const totalEarn = 
-                  data.earnings_per_month + 
-                  data.earnings_allowance +
-                  data.earnings_night_diff + 
-                  data.earnings_holiday + 
-                  data.earnings_retro + 
-                  data.earnings_commission; 
 
-                  const totalDeduc = 
-                  data.deductions_holding_tax + 
-                  data.deductions_sss_contribution + 
-                  data.deductions_phic_contribution + 
-                  data.deductions_sss_loan + 
-                  data.deductions_hdmf_contribution;
-
-                  const totalNetPay = parseFloat(totalEarn) - parseFloat(totalDeduc);
-                
-                 setPayload({
-                  ...payload,
-                  ...data,
-                  earnings_total: parseFloat(totalEarn), 
-                  deductions_total: parseFloat(totalDeduc),
-                  payslip_netPay: parseFloat(totalNetPay)
-                 })
-          
-                  document.getElementById('employee_payslip').showModal();
-                  document.getElementById('employee_payroll_details').close();
-                 
-                }}
-                >
-                   ISSUED PAYSLIP
-                   </button>
-              )}
-                <button type='button' className="btn shadow" onClick={()=>{
+                    ADD PAYROLL
+                  </button>
+                <button type='button' className="btn btn-error text-white shadow" onClick={()=>{
                    document.getElementById('employee_payroll_details').close();
+                  
                    setPayload({})
                 }}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1284,68 +668,70 @@ const handleSubmitPayroll = (e) => {
         <div className="modal-box w-11/12 max-w-5xl">
         <h3 className="font-bold text-lg mt-5">EMPLOYEE PAYROLL</h3>
         <span className="label-text opacity-70 text-[12px]">Input all the fields below</span>
-         
           <form  method="dialog" onSubmit={handleSubmitPayroll} autoComplete="off">
+          <div className="divider"></div>
            <div className='flex w-full gap-4'>
               <div className='flex justify-center items-center flex-col w-full mb-2'>
                 <label className="form-control w-full ">
                     <div className="label">
-                      <span className="label-text">Choose employee name:</span>
+                      <span className="label-text font-semibold">Employee name:</span>
                   </div>
-                   {_roll_id ? (
-                     <span className='font-bold opacity-70 uppercase'>{payload?.employee_name || ""} {payload?.position && `/ ${payload?.position}`}</span>     
-                   ): (
-                    <select className="select select-bordered" onChange={(e) => {
-                      if(e.target.value === "Pick one here"){
-                        setPayload({...payload, employee_id: "Pick employee please"});
-                      }else{
-                        
-                        const selectedOption = e.target.options[e.target.selectedIndex];
-                        const employeeId = selectedOption.dataset.employeeId;
-                        console.log(e.target.value)
-                       
-                        setPayload({...payload, employee_id: e.target.value, emp_id: employeeId});
-                      }
-                    }}>
-                      <option defaultValue={""}>Pick one here</option>
-                      {employees?.map(emp => {
-                        return (
-                          <option key={emp.id} value={emp.id} data-employee-id={emp.employee_id}>{emp.employee_name} ({emp.position ? emp.position : emp.employee_role})</option>
-                        )
-                      })}
-                    </select>
-                   )}
+                     <span className='font-bold opacity-70 uppercase text-blue-500'>{payload?.employee_name || ""} {payload?.position && `/ ${payload?.position}`}</span>     
                 </label>
 
                 <label className="form-control w-full ">
                     <div className="label">
-                      <span className="label-text">Employee ID:</span>
+                      <span className="label-text font-semibold">Employee ID:</span>
                   </div>
-                  {_roll_id ? (
-                    <span className='font-bold opacity-70'>{payload.emp_id || ""} {payload?.position && `/ ${payload?.position}`}</span>     
-
-                  ): (
-                    <input type="text" placeholder="Employee ID" value={payload.emp_id} disabled className="input input-bordered w-full" />  
-                  )}
+                    <span className='font-bold opacity-70 text-red-500'>{payload.emp_id || ""}</span>     
+                </label>
+                <label className="form-control w-full mt-2">
+                    <div className="label">
+                      <span className="label-text font-semibold">Bank Account:</span>
+                  </div>
+                    <span className='font-bold opacity-70 text-red-500 ml-1'>{payload?.bank_name || ""} / {payload?.account_number || ""}</span>     
                 </label>
               </div>
               <div className='w-full'>
               <label className="form-control w-full">
                   <div className="label">
-                    <span className="label-text">Payroll Dates:</span>
+                    <span className="label-text font-semibold">PayDate:</span>
                   </div>
-                  <input type="date" value={payload.pay_roll_dates || ""} placeholder="Input here..." onChange={(e)=> {
-                    setPayload({...payload, pay_roll_dates: e.target.value})
-                  }} className="input input-bordered w-full " />
+                  <input type="date" value={payload.pay_roll_dates || ""} name='pay_roll_dates' placeholder="Input here..." onChange={(e)=> {
+                    setPayload({...payload, [e.target.name]: e.target.value})
+                  }} className="input input-bordered input-sm w-full " />
                 </label>
+                <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['comp_pay_roll_dates'] && "Payroll date is required, please try again!" }</p>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text font-semibold">Payroll Date Begin:</span>
+                  </div>
+                  <input type="date" value={payload.pay_roll_dates_begin || ""} name='pay_roll_dates_begin' placeholder="Input here..." onChange={(e)=> {
+                    setPayload({...payload, [e.target.name]: e.target.value})
+                  }} className="input input-bordered input-sm w-full " />
+                </label>
+                <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['comp_pay_roll_dates_begin'] && "Payroll date is required, please try again!" }</p>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text font-semibold">Payroll Date End:</span>
+                  </div>
+                  <input type="date" value={payload.pay_roll_dates_end || ""} name='pay_roll_dates_end' placeholder="Input here..." onChange={(e)=> {
+                    setPayload({...payload, [e.target.name]: e.target.value})
+                  }} className="input input-bordered input-sm w-full " />
+                </label>
+                <p  className="text-red text-xs italic mt-2 text-red-500 ml-2 error-message">{error && error['comp_pay_roll_dates_end'] && "Payroll date is required, please try again!" }</p>
+            
+
+              
            
               </div>
            </div>
+           
            <div className="divider"></div> 
            <div className='flex w-full flex-col gap-4'>
             <div className='w-full'>
             <div className="flex-shrink-0 flex items-center gap-3 ml-2 mb-3" >
-              <span className='font-bold opacity-70'>EARNINGS</span>             
+              <span className='font-bold opacity-70 text-blue-500'>EARNINGS:</span>             
             </div>
 
             <div className="overflow-x-auto">
@@ -1361,9 +747,9 @@ const handleSubmitPayroll = (e) => {
                 <tbody>
              
                   <tr >
-                    <td><input type="number" min={0} value={payload?.bi_montly || ""} onKeyUp={calculateSlip}  name='bi_montly' placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                    <td><input type="number" min={0}  value={payload?.per_hour_day || ""} name='per_hour_day' placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculateSlip} /></td>
-                    <td><input type="number" min={0}   disabled value={payload?.amount || ""} name='amount' placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" min="0" step="0.01" value={payload?.bi_montly || ""} onKeyUp={calculateSlip}  name='bi_montly' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" min="0" step="0.01"  value={payload?.per_hour_day ? payload?.per_hour_day : ""} name='per_hour_day' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculateSlip} /></td>
+                    <td><input type="number" min="0" step="0.01"   disabled value={payload?.amount || ""} name='amount' placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
                   </tr>
                  
                 </tbody>
@@ -1383,9 +769,9 @@ const handleSubmitPayroll = (e) => {
                 <tbody>
              
                   <tr>
-                    <td><input type="number" onKeyUp={calculateSlip} value={payload?.night_diff || ""} name='night_diff' placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                    <td><input type="number" onKeyUp={calculateSlip} value={payload?.holiday_OT || ""} name='holiday_OT' placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                    <td><input type="number" onKeyUp={calculateSlip} value={payload?.incentive || ""} name='incentive' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs"  /></td>
+                    <td><input type="number" onKeyUp={calculateSlip} min="0" step="0.01" value={payload?.night_diff || ""} name='night_diff' placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" onKeyUp={calculateSlip} min="0" step="0.01" value={payload?.holiday_OT || ""} name='holiday_OT' placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="number" onKeyUp={calculateSlip} min="0" step="0.01" value={payload?.incentive || ""} name='incentive' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs"  /></td>
                   </tr>
                  
                 </tbody>
@@ -1395,7 +781,7 @@ const handleSubmitPayroll = (e) => {
             </div>
             <div className='w-full'>
             <div className="flex-shrink-0 flex items-center gap-3 ml-2 mb-3" >
-              <span className='font-bold opacity-70'>DEDUCTIONS</span>             
+              <span className='font-bold opacity-70 text-red-500'>DEDUCTIONS:</span>             
             </div>
             <span className=' text-sm opacity-60 ml-2'>( Absent/Tardiness )</span>     
             <div className="overflow-x-auto mb-2">
@@ -1410,12 +796,11 @@ const handleSubmitPayroll = (e) => {
                   </tr>
                 </thead>
                 <tbody>
-             font-semibold 
                   <tr >
-                    <td><input type="number" min={0} value={payload?.tardines_minutes || ""} name='tardines_minutes' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculateSlip} placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" /></td>
-                    <td><input type="number" min={0}  value={payload?.tardines_days || ""} name='tardines_days' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculateSlip} placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" /></td>
-                    <td><input type="number" min={0}   value={payload?.tardines_total_minutes ? payload?.tardines_total_minutes?.toFixed(2) : "0.00"} disabled  placeholder="Type here" className="input input-bordered w-full max-w-xs font-semibold" /></td>
-                    <td><input type="number" min={0}  value={payload?.tardines_total_days ? payload?.tardines_total_days?.toFixed(2) : "0.00"} disabled placeholder="Type here" className="input input-bordered w-full max-w-xs font-semibold" /></td>
+                    <td><input type="number" min="0" step="0.01" value={payload?.tardines_minutes || ""} name='tardines_minutes' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculateSlip} placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" /></td>
+                    <td><input type="number" min="0" step="0.01"  value={payload?.tardines_days || ""} name='tardines_days' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  onKeyUp={calculateSlip} placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" /></td>
+                    <td><input type="number" min="0" step="0.01"   value={payload?.tardines_total_minutes ? payload?.tardines_total_minutes?.toFixed(2) : "0.00"} disabled  placeholder="0.00" className="input input-bordered w-full max-w-xs font-semibold" /></td>
+                    <td><input type="number" min="0" step="0.01"  value={payload?.tardines_total_days ? payload?.tardines_total_days?.toFixed(2) : "0.00"} disabled placeholder="0.00" className="input input-bordered w-full max-w-xs font-semibold" /></td>
                   </tr>
                  
                 </tbody>
@@ -1433,28 +818,25 @@ const handleSubmitPayroll = (e) => {
                 </thead>
                 <tbody>
                   <tr>
-                    <td><input type="number" onKeyUp={calculateSlip} min={0} value={payload?.sss || ""} name='sss' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" /></td>
-                    <td><input type="number" onKeyUp={calculateSlip} min={0} value={payload?.phic || ""} name='phic' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" /></td>
-                    <td><input type="number" onKeyUp={calculateSlip} min={0} value={payload?.hdmf || ""} name='hdmf' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  placeholder="Type here" className="font-semibold input input-bordered w-full max-w-xs" /></td>
+                    <td><input type="number" min="0" step="0.01" onKeyUp={calculateSlip}  value={payload?.sss || ""} name='sss' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" /></td>
+                    <td><input type="number" min="0" step="0.01" onKeyUp={calculateSlip}  value={payload?.phic || ""} name='phic' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" /></td>
+                    <td><input type="number" min="0" step="0.01" onKeyUp={calculateSlip}  value={payload?.hdmf || ""} name='hdmf' onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})}  placeholder="0.00" className="font-semibold input input-bordered w-full max-w-xs" /></td>
                   </tr>
                 </tbody>
               </table>
             </div>
             </div>
            </div>
-           <div className="divider"></div>
-           <div className='flex w-full  justify-between items-center'>
-            <label className="input input-bordered flex items-center gap-2">
-                <span className='font-bold opacity-70'> Withholding Tax: </span> 
-                  <input type="number" min={0} value={payload?.withholding || ""} name='withholding' className="grow" placeholder="Type here..." onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculateSlip}  />
-              </label> 
-            <label className="input  flex items-center gap-2">
-                  <span className='font-bold opacity-70'>Taxable Income:</span> 
-                  <input min={0} value={payload.taxable_income ? payload.taxable_income.toFixed(2) : "0.00"} type="number" disabled className="grow font-semibold text-blue-500" placeholder=""  />
-              </label>
+           <div className='flex w-full  justify-between items-center mt-3 p-4'>
+           <label className="form-control w-full mb-5">
+                  <div className="label">
+                    <span className="label-text font-semibold opacity-70 ">Withholding Tax:</span>
+                  </div>
+                  <input type="number" min="0" 
+              step="0.01" value={payload?.withholding || ""} name='withholding' placeholder="0.00" className="input input-bordered w-full font-semibold" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} onKeyUp={calculateSlip}   />
+                </label>
             </div>
-          
-            <div className="divider"></div> 
+        
             <div className='flex justify-around items-center my-2'>
             <span className=' text-sm opacity-60'>( Other payments and deductions )</span>     
             <span className=' text-sm opacity-60'>( Additional )</span>     
@@ -1472,51 +854,40 @@ const handleSubmitPayroll = (e) => {
                 </thead>
                 <tbody>
                   <tr >
-                    <td><input type="text" onKeyUp={calculateSlip} min={0} value={payload?.sss_loan || ""} name="sss_loan" placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                    <td><input type="text" onKeyUp={calculateSlip} min={0} value={payload?.ar_others || ""} name="ar_others"  placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                    <td><input type="text" onKeyUp={calculateSlip} min={0} value={payload?.retro_others || ""} name="retro_others"  placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                    <td><input type="text" onKeyUp={calculateSlip} min={0} value={payload?.allowance || ""} name="allowance"  placeholder="Type here" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="text" onKeyUp={calculateSlip} min="0" step="0.01" value={payload?.sss_loan || ""} name="sss_loan" placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="text" onKeyUp={calculateSlip} min="0" step="0.01" value={payload?.ar_others || ""} name="ar_others"  placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="text" onKeyUp={calculateSlip} min="0" step="0.01" value={payload?.retro_others || ""} name="retro_others"  placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
+                    <td><input type="text" onKeyUp={calculateSlip} min="0" step="0.01" value={payload?.allowance || ""} name="allowance"  placeholder="0.00" className="input font-semibold input-bordered w-full max-w-xs" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
                   </tr>
                  
                 </tbody>
               </table>
             </div>
-            <div className="divider"></div>
+            <div className='flex justify-between mb-5'>
+              <label className="input  flex items-center gap-2 ">
+                  <span className='font-bold opacity-70'>Taxable Income:</span> 
+                  <input  min="0" step="0.01" value={payload.taxable_income ? payload.taxable_income.toFixed(2) : "0.00"} type="hidden" disabled className="grow font-semibold text-blue-500" placeholder=""  />
+                  <span className='opacity-70 font-semibold text-blue-700'>{(payload?.taxable_income )?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>    
+              </label>
             <label className="input  flex items-center gap-2">
                   <span className='font-bold opacity-70'>Net Pay:</span> 
-                  <input type="number" value={payload.total_net_pay ? payload.total_net_pay.toFixed(2): "0.00"} disabled className="grow font-semibold text-red-500" placeholder=""  />
+                  <input type="hidden" value={payload.total_net_pay ? payload.total_net_pay.toFixed(2): "0.00"} disabled className="grow font-semibold text-red-500" placeholder=""  />
+                  <span className='opacity-70 font-semibold text-red-500'>{(payload?.total_net_pay )?.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' }) || "0.00"}</span>    
               </label>
-
-              <div className="divider"></div>
-              <div className="flex-shrink-0 flex items-center gap-3 ml-2 mb-3" >
-              <span className='font-bold opacity-70'>Union Bank Details</span>             
-            </div>    
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Account Numbers</th>
-                    <th>Name</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><input type="text" value={payload?.account_number || ""} name="account_number" placeholder="Type here" className="input font-semibold input-bordered w-full" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                    <td><input type="text" value={payload?.bank_name || ""} name="bank_name" placeholder="Type here" className="input font-semibold input-bordered w-full" onChange={(e)=> setPayload({...payload, [e.target.name]:e.target.value})} /></td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
 
-         
             <p  className="text-red text-xs italic text-red-500 ml-2 error-message"></p>
             <div className="modal-action">
                 <button type='submit' className="btn bg-[#0984e3] hover:bg-[#0984e3] text-white w-[40%]">
-                  {!_roll_id ? "SUBMIT PAYROLL" : "UPDATE PAYROLL"}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
+                  <path fillRule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875ZM12.75 12a.75.75 0 0 0-1.5 0v2.25H9a.75.75 0 0 0 0 1.5h2.25V18a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-2.25V12Z" clipRule="evenodd" />
+                  <path d="M14.25 5.25a5.23 5.23 0 0 0-1.279-3.434 9.768 9.768 0 0 1 6.963 6.963A5.23 5.23 0 0 0 16.5 7.5h-1.875a.375.375 0 0 1-.375-.375V5.25Z" />
+                </svg>
+
+                   SUBMIT PAYROLL
                    </button>
-                <button type='button' className="btn shadow" onClick={()=>{
+                <button type='button' className="btn btn-error text-white shadow" onClick={()=>{
                    document.getElementById('employee_payroll').close();
-                   console.log(_roll_id)
                    setRoll_id("");
                    setPayload({})
                 }}>

@@ -20,6 +20,8 @@ import Attendance from "./views/Attendance";
 import Hubstaff_members from "./views/Hubstaff_members";
 import Compensation from "./views/Payroll_and_Payslip";
 import Payslip from "./views/Payslip";
+import Paycheck from "./views/Paycheck";
+import Payroll from "./views/Payroll";
 
 
 
@@ -47,8 +49,16 @@ const router = createBrowserRouter([
           { path: "/employees/:id", element: <UserDetails />},
           { path: "/notification", element: <Notifications />},
           { path: "/members", element: <Hubstaff_members />},
-          { path: "/payroll", element: <Compensation />},
-          { path: "/payslip", element: <Payslip />}
+          {
+            path: "/paycheck",
+            element: <Paycheck />,
+            children: [
+              { path: "rates", element: <Compensation /> },
+              { path: "payslip", element: <Payslip /> },
+              { path: "payroll", element: <Payroll /> }
+            ]
+          }
+          
  
       
         ]
