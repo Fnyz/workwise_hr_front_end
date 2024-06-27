@@ -3,9 +3,10 @@ import axiosClient from "../axiosClient";
 import DatePicker from "react-datepicker";
 import moment from "moment";
 import { Link } from "react-router-dom";
+import { Chart } from "react-google-charts";
 
 
-
+  
 
 function Dashboard() {
 
@@ -25,6 +26,21 @@ function Dashboard() {
      const [totalNotifications, setTotalNotifications] = useState([])
      const [loadSubmit, setLoadSubmit] = useState(false);
      const [load, setLoading] = useState(false);
+
+     const data = [
+        ["Period", "Net Pay", "Taxable Income", "Taxable Deduction"],
+        ["2014-2019", 1000, 400, 200],
+        ["2015", 1170, 460, 250],
+        ["2016", 660, 1120, 300],
+        ["2017", 1030, 540, 350],
+      ];
+      
+      const options = {
+        chart: {
+          title: "Company Performance",
+          subtitle: "Sales, Expenses, and Profit: 2014-2017",
+        },
+      };
   
     useEffect(()=>{
 
@@ -255,7 +271,7 @@ function Dashboard() {
             return (
                 <div className="ml-auto mb-6 lg:w-[75%] xl:w-[80%] 2xl:w-[85%] bg-white">
                     <div className="px-6 pt-6 2xl:container ">
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 ">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-4 ">
 
                             {empRole === "HR" || empRole === "ADMIN" ? (
                             <div className="relative flex flex-col bg-clip-border rounded-xl bg-white text-gray-700 shadow-md">
@@ -334,6 +350,18 @@ function Dashboard() {
                             )}
         
                            
+                        </div>
+                        <div className="w-full">
+                        <Chart
+                        chartType="Bar"
+                        width="100%"
+                        height="400px"
+                        style={{
+                            marginTop:'20px',
+                        }}
+                        data={data}
+                        options={options}
+                        />
                         </div>
                     </div> 
         

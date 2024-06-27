@@ -204,6 +204,10 @@ const ComponentShow = ({settings, payload, setPayload, allRole, allDepartment, a
 }
 
 
+
+
+
+
 function DefaultLayout() {
 
   const [totalNotifications, setTotalNotifications] = useState([]);
@@ -244,6 +248,15 @@ function DefaultLayout() {
         setToken(null);
     })
   }
+
+
+  const divStyle = {
+    color: 'blue',
+    backgroundColor: 'lightgray',
+    padding: '10px',
+    borderRadius: '5px',
+    height:'10px'
+  };
 
 
   const handleSubmit = () => {
@@ -527,6 +540,131 @@ function DefaultLayout() {
    }
  }
 
+ const Component = ({ role, links, pathname, user, canFileLeave }) => {
+  return (
+    <div className="max-h-[300px] overflow-y-auto p-2 no-scrollbar">
+      <ul  className="list-none p-0 m-0">
+        {(() => {
+          switch (role) {
+            case 'HR':
+            case 'ADMIN':
+              return links
+                ?.filter(link => (
+                  link.path === '/dashboard' ||
+                  link.path === '/positions' ||
+                  link.path === '/department' ||
+                  link.path === '/employees' ||
+                  link.path === '/attendance' ||
+                  link.path === '/notification' ||
+                  link.path === '/leave' ||
+                  link.path === '/history' ||
+                  link.path === '/members' ||
+                  link.path === '/payroll/payroll_summary'
+                ))
+                ?.map((link, i) => (
+                  <li key={i}>
+                    <Link
+                      to={link.path}
+                      onClick={(e) => {
+                        if (!localStorage.getItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN") && (link.path === '/attendance' || link.path === '/members')) {
+                          e.preventDefault();
+                          document.getElementById('my_modal_hubstaff').showModal();
+                          return;
+                        }
+
+                        if (!canFileLeave && link.path === '/leave') {
+                          e.preventDefault();
+                          swal({
+                            title: "Oooops!",
+                            text: `You are not allowed to add leave, because you don't have a department or a position as an ${role}.`,
+                            icon: "warning",
+                            dangerMode: true,
+                          });
+                          return;
+                        }
+                      }}
+                      aria-label="dashboard"
+                      className={`${i === 0 ? "": "mt-2"}  shadow px-4 py-3 flex items-center space-x-4 rounded-xl ${link.path === "/leave" && !canFileLeave ? "cursor-not-allowed" : ""} ${link.name.toLowerCase() === pathname.split('/')[1] ? "rounded-xl  text-white bg-gradient-to-r from-[#3498db] to-[#3498db]" : "group"}`}
+                    >
+                      {link.path === "/leave" ? <IconFile authorize_leave={canFileLeave} icon={link.icons} user={user} /> : link.icons}
+                      <span className="-mr-1 font-semibold opacity-70">{link.name}</span>
+                    </Link>
+                  </li>
+                ));
+
+            case 'EMPLOYEE':
+              return links
+                ?.filter(link => (
+                  link.path === '/dashboard' ||
+                  link.path === '/notification' ||
+                  link.path === '/payroll/payslip_history' ||
+                  link.path === '/leave'
+                ))
+                ?.map((link, i) => (
+                  <li key={i}>
+                    <Link
+                      to={link.path}
+                      onClick={(e) => {
+                        if (!user.email_verified_at && link.path === '/leave') {
+                          e.preventDefault();
+                          setChooseSettings("Account Verification");
+                          setPayload({ ...payload, employee_email: employeeData.employee_email });
+                          swal({
+                            title: "Oooops!",
+                            text: "You are not allowed to add leave, because your email account is not verified yet. Click OK now to verify your email account.",
+                            icon: "warning",
+                            buttons: true,
+                            dangerMode: true,
+                          }).then((willDelete) => {
+                            if (willDelete) {
+                              document.getElementById('my_settings_3').showModal();
+                            }
+                          });
+                          return;
+                        }
+
+                        if (!canFileLeave && link.path === '/leave') {
+                          e.preventDefault();
+                          swal({
+                            title: "Oooops!",
+                            text: `You are not allowed to add leave, because you don't have a department or a position as an ${role}.`,
+                            icon: "warning",
+                            buttons: true,
+                            dangerMode: true,
+                          });
+                          return;
+                        }
+                      }}
+                      aria-label="dashboard"
+                      className={`relative px-4 py-3 flex items-center space-x-4 rounded-xl ${link.path === "/leave" && !canFileLeave ? "cursor-not-allowed" : link.path === "/leave" && !user.email_verified_at ? "cursor-not-allowed" : ""} ${link.name.toLowerCase() === pathname.split('/')[1] ? "rounded-xl text-white bg-gradient-to-r from-[#3498db] to-[#3498db]" : "group"}`}
+                    >
+                      {link.path === "/leave" ? <IconFile authorize_leave={canFileLeave} icon={link.icons} user={user} /> : link.icons}
+                      <span className="-mr-1 font-medium">{link.name}</span>
+                    </Link>
+                  </li>
+                ));
+
+            default:
+              return links
+                ?.filter(link => link.path === '/dashboard')
+                ?.map((link, i) => (
+                  <li key={i}>
+                    <Link
+                      to={link.path}
+                      aria-label="dashboard"
+                      className={`relative px-4 py-3 flex items-center space-x-4 rounded-xl ${link.name.toLowerCase() === pathname.split('/')[1] ? "rounded-xl text-white bg-gradient-to-r from-[#3498db] to-[#3498db]" : "group"}`}
+                    >
+                      {link.icons}
+                      <span className="-mr-1 font-medium">{link.name}</span>
+                    </Link>
+                  </li>
+                ));
+          }
+        })()}
+      </ul>
+    </div>
+  );
+};
 
 
 
@@ -564,127 +702,6 @@ function DefaultLayout() {
   }
 
 
-  const Component  = () => {
-    switch (role) {
-      case 'HR':
-      case 'ADMIN':
-        return links.filter(link => link.path === '/dashboard' 
-        || link.path === '/positions' 
-        || link.path === '/department'
-        || link.path === '/employees'
-        || link.path === '/attendance'
-        || link.path === '/notification'
-        || link.path === '/leave'
-        || link.path === '/history'
-        || link.path === '/members'
-        || link.path === '/paycheck/rates'
-      ) 
-        .map((link ,i) => (
-             <li key={i} >
-             <Link to={`${link.path}`} onClick={(e)=> {
-           
-                if(!localStorage.getItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN") && link.path === '/attendance' ){
-                  e.preventDefault();
-                    document.getElementById('my_modal_hubstaff').showModal()
-                  return ;
-                }
-
-                if(!localStorage.getItem("HUBSTAFF_ACCESS_AND_REFRESH_TOKEN") && link.path === '/members' ){
-                  e.preventDefault();
-                    document.getElementById('my_modal_hubstaff').showModal()
-                  return ;
-                }
-                   
-                          
-                
-                if(!canFileLeave && link.path === '/leave'){
-                  e.preventDefault();
-                  swal({
-                    title: "Oooops!",
-                    text: `You are not allowed to add leave, because you don't have a department or a position as an ${role}.`,
-                    icon: "warning",
-                    dangerMode: true,
-                  })
-                  return ;
-                }
-              
-             }}  aria-label="dashboard" className={`${link.path === "/leave" && !canFileLeave ? "cursor-not-allowed" : ""} shadow relative px-4 py-3 flex items-center space-x-4 rounded-xl ${link.name.toLowerCase()=== pathname.split('/')[1] ? "rounded-xl text-white bg-gradient-to-r from-[#3498db] to-[#3498db] " : " group "} `}>
-                 {link.path === "/leave" ? <IconFile authorize_leave={canFileLeave} icon={link.icons} user={user}/> : link.icons}
-                 <span  className="-mr-1 font-medium">{link.name}</span>
-             </Link>
-         </li>
-         ))
-
-      case 'EMPLOYEE':
-        return links.filter(link => link.path === '/dashboard'
-        || link.path === '/notification'
-        || link.path === '/paycheck/payslip'
-        || link.path === '/leave'
-      ) 
-        .map((link ,i) => (
-             <li key={i} >
-            <Link to={`${link.path}`} onClick={(e)=> {
-              if(!user.email_verified_at && link.path === '/leave'){
-                  e.preventDefault();
-                  setChooseSettings("Account Verification")
-                  setPayload({...payload, employee_email:employeeData.employee_email})
-                  swal({
-                    title: "Oooops!",
-                    text: "You are not allowed to add leave, because you email account is not verified yet. Click OK now to verified your email account.",
-                    icon: "warning",
-                    buttons: true,
-                    dangerMode: true,
-                  })
-                  .then((willDelete) => {
-                    if (willDelete) {
-                      document.getElementById('my_settings_3').showModal()
-                    } 
-                  });
-                 
-                  return ;
-              }
-
-
-                      
-              if(!canFileLeave && link.path === '/leave'){
-                e.preventDefault();
-                swal({
-                  title: "Oooops!",
-                  text: `You are not allowed to add leave, because you don't have a department or a position as an ${role}.`,
-                  icon: "warning",
-                  buttons: true,
-                  dangerMode: true,
-                })
-                return ;
-              }
-             }}  aria-label="dashboard" className={`${link.path === "/leave" && !canFileLeave ? "cursor-not-allowed" : link.path === "/leave" && !user.email_verified_at ? "cursor-not-allowed" : ""} relative px-4 py-3 flex items-center space-x-4 rounded-xl ${link.name.toLowerCase()=== pathname.split('/')[1] ? "rounded-xl text-white bg-gradient-to-r from-[#3498db] to-[#3498db]" : " group"} `}>
-                 {link.path === "/leave" ? <IconFile authorize_leave={canFileLeave} icon={link.icons} user={user}/> : link.icons}
-                 <span  className="-mr-1 font-medium">{link.name}</span>
-             </Link>
-         </li>
-         ))
-    
-      default:
-        return links.filter(link => link.path === '/dashboard'  )
-       .map((link ,i) => (
-            <li key={i}>
-            <Link to={`${link.path}`} aria-label="dashboard" className={`relative px-4 py-3 flex items-center space-x-4 rounded-xl ${link.name.toLowerCase()=== pathname.split('/')[1] ? "rounded-xl text-white bg-gradient-to-r from-[#3498db] to-[#3498db]" : " group"} `}>
-                {link.icons}
-                <span className="-mr-1 font-medium">{link.name}</span>
-            </Link>
-        </li>
-        ))
-    }
-  }
-
-
-
- 
-
-  
-
-  
-
 
 
 
@@ -701,7 +718,7 @@ function DefaultLayout() {
             <div className="skeleton h-4 w-full"></div>
           </div>
         ): (
-         <div className='w-full '>
+         <div className='w-full'>
               <div className="-mx-6 px-6 py-4 text-center ">
                   <a href="#" title="home">
                   <h4 className="block font-sans text-2xl font-semibold leading-snug tracking-normal text-blue-gray-900 antialiased ">
@@ -711,7 +728,7 @@ function DefaultLayout() {
                   </a>
               </div>
        
-              <div className="mt-2 text-center flex justify-center items-center flex-col">
+              <div className="mt-2 mb-4 text-center flex justify-center items-center flex-col">
           
                  {employeeData && employeeData?.employee_image ? (
                 
@@ -746,11 +763,16 @@ function DefaultLayout() {
                    
                   </div>
               </div>
-
-              <ul className="space-y-2 tracking-wide mt-8 ">
-                <Component />
           
-              </ul>
+            
+                <Component  
+                role ={role}
+                links = {links}
+                pathname ={pathname}
+                user ={user}
+                canFileLeave ={canFileLeave}
+                />
+             
           </div> 
         )}
         
@@ -790,7 +812,7 @@ function DefaultLayout() {
                               return (
                                 <li   key={i}>
                                   <Link disabled  to={pathname.split("/").slice(1, pathname.split("/").length)[0] === pt ? pt === "paycheck" ? '/paycheck/rates' : `/${pt}` : `${pathname.split("/").slice(1, pathname.split("/").length)[0]}/${pt}` }>
-                                       <h5  hidden className={`text-sm  text-gray-600 font-medium block capitalize ${pt === id ? "cursor-not-allowed" : "cursor-pointer"}`} >{pt}</h5>
+                                       <h5  hidden className={`text-sm  text-gray-600 font-bold uppercase block ${pt === id ? "cursor-not-allowed" : "cursor-pointer"}`} >{pt}</h5>
                                   </Link>
                                 </li> 
                               )

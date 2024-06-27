@@ -50,12 +50,12 @@ const router = createBrowserRouter([
           { path: "/notification", element: <Notifications />},
           { path: "/members", element: <Hubstaff_members />},
           {
-            path: "/paycheck",
+            path: "/payroll",
             element: <Paycheck />,
             children: [
-              { path: "rates", element: <Compensation /> },
-              { path: "payslip", element: <Payslip /> },
-              { path: "payroll", element: <Payroll /> }
+              { path: "payroll_summary", element: <Compensation /> },
+              { path: "payslip_history", element: <Payslip /> },
+              // { path: "payroll", element: <Payroll /> }
             ]
           }
           

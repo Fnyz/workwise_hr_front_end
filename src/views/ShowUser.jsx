@@ -678,7 +678,7 @@ function ShowUser() {
   {_roll_id && (
   <div className='mt-5'>
     <div className='flex items-center gap-2'>
-    <h2 className="card-title text-sm">Bank Name:</h2>
+    <h2 className="card-title text-sm">Account Name:</h2>
     <p className=' text-blue-500 font-semibold'>{payload.bank_name && payload.bank_name}</p>
     </div>
     <div className='flex items-center gap-2'>
